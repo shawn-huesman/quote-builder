@@ -61,8 +61,9 @@ class PricingEngine:
     def _price_flooring_installation(self, d: dict, container) -> float:
         cfg = self.config["Flooring_Installation"]
         sqft = container.ceiling_area
+        perimeter = container.perimeter
         rate = cfg["per_sqft_rates"].get(d.get("material", "LVP"), cfg["per_sqft_rates"]["LVP"])
-        total = (sqft * rate * cfg["waste_factor_multiplier"]) + (cfg["perimeter"] * cfg["quarter_round"])
+        total = (sqft * rate * cfg["waste_factor_multiplier"]) + (perimeter * cfg["quarter_round"])
         total += d.get("transitions", 0)        * cfg["per_transition_rate"]
         total += d.get("appliances_to_move", 0) * cfg["per_appliance_rate"]
         total += d.get("toilets_to_reset", 0)   * cfg["per_toilet_rate"]
