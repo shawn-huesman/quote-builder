@@ -129,8 +129,8 @@ PRICING_CONFIG = {
         "free_deal_threshold": 10000.00,
         "rates": {
             "none": 0.00,
-            "standard": 295.00,
-            "messy": 495.00
+            "standard": 500.00,
+            "messy": 650.00
         }
     },
     "Landscape_Clean_Up": {
