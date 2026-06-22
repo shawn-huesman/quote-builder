@@ -41,6 +41,7 @@ CRITICAL RULES:
 - Every task must have a room_name that exactly matches either a room label or a space name from the input data.
 - Every task must include its corresponding Details object (e.g. Interior_Painting_Details for Interior_Painting).
 - Use clear descriptive sentences for service_description.
+- For Landscape_Clean_Up tasks: If there is anything specified inside the cleanup request notes, add 1 per man day rate unless specified otherwise. Additionally, calculate that each mulch bed requires exactly 20 bags of mulch.
 
 """
 
