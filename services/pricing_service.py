@@ -90,7 +90,12 @@ class PricingEngine:
         )
 
     def _price_light_handyman_work(self, d: dict, container) -> float:
-        return d.get("task_count", 0) * self.config["Light_Handyman_Work"]["per_task_rate"]
+        cfg = self.config["Light_Handyman_Work"]
+
+        return (
+            d.get("task_count", 0) * cfg["per_task_rate"] +
+            d.get("cabinet_door_pull_amount", 0) * cfg["per_cabinet_door_pull_install"]
+        )
 
     def _price_move_out_cleaning(self, d: dict, container) -> float:
         return self.config["Move_Out_Cleaning"]["rates"].get(d.get("status", "none"), 0.0)

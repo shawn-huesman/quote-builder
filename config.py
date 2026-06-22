@@ -119,6 +119,7 @@ PRICING_CONFIG = {
         "per_refrigerator": 95.00
     },
     "Light_Handyman_Work": {
+        "per_cabinet_door_pull_install": 15.00,
         "per_task_rate": 85.00
     },
     "Move_Out_Cleaning": {
@@ -302,7 +303,8 @@ QUOTE_SCHEMA = {
             "required": ["service_description", "task_count"],
             "properties": {
               "service_description": {"type": "STRING"},
-              "task_count": {"type": "INTEGER"}
+              "task_count": {"type": "INTEGER"},
+              "cabinet_door_pull_amount": {"type": "INTEGER"}
             }
           },
 
