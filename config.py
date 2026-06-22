@@ -42,7 +42,7 @@ CRITICAL RULES:
 - Every task must include its corresponding Details object (e.g. Interior_Painting_Details for Interior_Painting).
 - Use clear descriptive sentences for service_description.
 - For Landscape_Clean_Up tasks: If there is anything specified inside the cleanup request notes, add 1 per man day rate unless specified otherwise. Additionally, calculate that each mulch bed requires exactly 20 bags of mulch.
-
+- For Home_Clear_Outs tasks: Calculate that using a dumpster of any size requires 2 people.
 """
 
 PRICING_CONFIG = {
@@ -115,6 +115,8 @@ PRICING_CONFIG = {
         "dumpster_20yd": 450.00,
         "dumpster_30yd": 550.00,
         "dumpster_40yd": 650.00,
+        "per_person_rate": 200.00,
+        "margin_multiplier": 2.00,
         "per_tire": 20.00,
         "per_mattress": 50.00,
         "per_refrigerator": 95.00
@@ -293,6 +295,7 @@ QUOTE_SCHEMA = {
               "dumpster_20yd_count": {"type": "INTEGER"},
               "dumpster_30yd_count": {"type": "INTEGER"},
               "dumpster_40yd_count": {"type": "INTEGER"},
+              "people_needed": {"type": "INTEGER"},
               "tire_count": {"type": "INTEGER"},
               "mattress_count": {"type": "INTEGER"},
               "refrigerator_count": {"type": "INTEGER"}

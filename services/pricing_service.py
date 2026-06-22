@@ -86,8 +86,9 @@ class PricingEngine:
             d.get("dumpster_40yd_count", 0) * cfg["dumpster_40yd"] +
             d.get("tire_count", 0)          * cfg["per_tire"] +
             d.get("mattress_count", 0)      * cfg["per_mattress"] +
-            d.get("refrigerator_count", 0)  * cfg["per_refrigerator"]
-        )
+            d.get("refrigerator_count", 0)  * cfg["per_refrigerator"] +
+            d.get("people_needed", 0) * cfg["per_person_rate"]
+        ) * cfg["margin_multiplier"]
 
     def _price_light_handyman_work(self, d: dict, container) -> float:
         cfg = self.config["Light_Handyman_Work"]
