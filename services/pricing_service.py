@@ -21,7 +21,7 @@ class PricingEngine:
         sub = d.get("sub_tasks", [])
         if "walls" in sub:                total += sqft * cfg["walls_per_sqft"]
         if "ceiling" in sub:              total += sqft * cfg["ceiling_per_sqft"]
-        if "trim" in sub:                 total += sqft * cfg["trim_per_sqft"]
+        if "trim" in sub:                 total += sqft * cfg["trim_per_lnft"]
         if "wallpaper_removal" in sub:    total += sqft * cfg["wallpaper_per_sqft"]
         if "priming" in sub:              total += sqft * cfg["priming_per_sqft"]
         if "concrete_floor_paint" in sub: total += sqft * cfg["concrete_floor_paint_per_sqft"]
