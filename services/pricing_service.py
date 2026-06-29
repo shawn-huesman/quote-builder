@@ -105,7 +105,12 @@ class PricingEngine:
         )
 
     def _price_move_out_cleaning(self, d: dict, container) -> float:
-        return self.config["Move_Out_Cleaning"]["rates"].get(d.get("status", "none"), 0.0)
+        cfg = self.config["Move_Out_Cleaning"]
+        sqft = container.paintable_sqft
+
+        return (
+            max(cfg["base_price"], cfg["per_sqft_price"] * sqft)
+        )
 
     def _price_landscape_clean_up(self, d: dict, container) -> float:
         cfg = self.config["Landscape_Clean_Up"]
