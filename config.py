@@ -61,7 +61,7 @@ PRICING_CONFIG = {
         "patch_large_rate": 75.00,
     },
     "Exterior_Painting": {
-        "base_per_side_rate": 1050.00,
+        "per_interior_sqft_rate": 3.50,
         "story_multiplier_step": 2.0,
         "substrate_multipliers": {
             "brick": 1.1,
