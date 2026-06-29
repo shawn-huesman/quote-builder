@@ -123,7 +123,10 @@ PRICING_CONFIG = {
     },
     "Light_Handyman_Work": {
         "per_cabinet_door_pull_install": 15.00,
-        "per_task_rate": 85.00
+        "per_task_rate": 85.00,
+        "per_light_fixture_install": 90.00,
+        "per_ceiling_fan_install": 130.00,
+        "per_mirror_install": 50.00
     },
     "Move_Out_Cleaning": {
         "free_deal_threshold": 10000.00,
@@ -302,7 +305,10 @@ QUOTE_SCHEMA = {
             "properties": {
               "service_description": {"type": "STRING"},
               "task_count": {"type": "INTEGER"},
-              "cabinet_door_pull_amount": {"type": "INTEGER"}
+              "cabinet_door_pull_amount": {"type": "INTEGER"},
+              "light_fixture_amount": {"type": "INTEGER"},
+              "ceiling_fan_amount": {"type": "INTEGER"},
+              "mirror_amount": {"type": "INTEGER"},
             }
           },
 

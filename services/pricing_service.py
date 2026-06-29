@@ -98,7 +98,10 @@ class PricingEngine:
 
         return (
             d.get("task_count", 0) * cfg["per_task_rate"] +
-            d.get("cabinet_door_pull_amount", 0) * cfg["per_cabinet_door_pull_install"]
+            d.get("cabinet_door_pull_amount", 0) * cfg["per_cabinet_door_pull_install"] +
+            d.get("light_fixture_amount", 0) * cfg["per_light_fixture_install"] +
+            d.get("ceiling_fan_amount", 0) * cfg["per_ceiling_fan_install"] +
+            d.get("mirror_amount", 0) * cfg["per_mirror_install"]
         )
 
     def _price_move_out_cleaning(self, d: dict, container) -> float:
