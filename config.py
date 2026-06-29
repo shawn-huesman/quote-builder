@@ -48,44 +48,44 @@ CRITICAL RULES:
 PRICING_CONFIG = {
     "regional_multipliers": 1.00,
     "Interior_Painting": {
-        "walls_per_sqft": 1.50,
-        "ceiling_per_sqft": 0.33,
-        "trim_per_sqft": 0.45,
+        "walls_per_sqft": 1.30,
+        "ceiling_per_sqft": 0.75,
+        "trim_per_lnft": 0.45,
         "wallpaper_per_sqft": 1.00,
         "priming_per_sqft": 0.50,
         "concrete_floor_paint_flat_rate": 400.00,
-        "per_door_rate": 60.00,
+        "per_door_rate": 65.00,
         "closet_flat_rate": 75.00,
         "patch_small_rate": 15.00,
         "patch_medium_rate": 35.00,
         "patch_large_rate": 75.00,
     },
     "Exterior_Painting": {
-        "base_per_side_rate": 450.00,
-        "story_multiplier_step": 1.3,
+        "base_per_side_rate": 1050.00,
+        "story_multiplier_step": 2.0,
         "substrate_multipliers": {
-            "brick": 1.2,
+            "brick": 1.1,
             "vinyl": 1.0,
-            "wood": 1.25,
+            "wood": 1.0,
             "stucco": 1.15,
             "concrete_block": 1.1
         },
         "deck_rates": {
             "none": 0.00,
-            "small": 250.00,
-            "average": 500.00,
-            "large": 900.00
+            "small": 750.00,
+            "average": 1650.00,
+            "large": 2600.00
         }
     },
     "Cabinet_Painting": {
         "per_door_rate": 115.00,
-        "single_vanity_flat": 200.00,
-        "double_vanity_flat": 350.00
+        "single_vanity_flat": 300.00,
+        "double_vanity_flat": 600.00
     },
     "Carpet_Installation": {
         "waste_factor_multiplier": 1.20,
         "per_sqft_rate": 5.00,
-        "per_transition_rate": 35.00,
+        "per_transition_rate": 50.00,
         "per_stair_step_rate": 7.00,
         "kilz_treatment_flat": 150.00,
         "demo_prep_flat": 125.00,
@@ -112,9 +112,9 @@ PRICING_CONFIG = {
     },
     "Home_Clear_Outs": {
         "per_box_truck_load": 550.00,
-        "dumpster_20yd": 450.00,
-        "dumpster_30yd": 550.00,
-        "dumpster_40yd": 650.00,
+        "dumpster_20yd": 550.00,
+        "dumpster_30yd": 620.00,
+        "dumpster_40yd": 700.00,
         "per_person_rate": 200.00,
         "margin_multiplier": 2.00,
         "per_tire": 20.00,
@@ -140,17 +140,11 @@ PRICING_CONFIG = {
     },
     "Pressure_Washing": {
         "standalone_flat": 250.00,
-        "discounted_with_landscaping": 125.00
     },
     "Window_Washing": {
-        "per_pane_rate": 12.00
-    },
-    "psychology_rules": {
-        "apply_above_threshold": 300.00,
-        "charm_ends_with": 85.00
+        "per_pane_rate": 30.00
     }
 }
-
 
 QUOTE_SCHEMA = {
   "type": "OBJECT",
