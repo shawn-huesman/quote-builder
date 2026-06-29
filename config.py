@@ -53,7 +53,7 @@ PRICING_CONFIG = {
         "trim_per_lnft": 0.45,
         "wallpaper_per_sqft": 1.00,
         "priming_per_sqft": 0.50,
-        "concrete_floor_paint_flat_rate": 400.00,
+        "concrete_floor_paint_per_sqft": 1.50,
         "per_door_rate": 65.00,
         "closet_flat_rate": 75.00,
         "patch_small_rate": 15.00,

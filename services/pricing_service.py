@@ -24,7 +24,7 @@ class PricingEngine:
         if "trim" in sub:                 total += sqft * cfg["trim_per_sqft"]
         if "wallpaper_removal" in sub:    total += sqft * cfg["wallpaper_per_sqft"]
         if "priming" in sub:              total += sqft * cfg["priming_per_sqft"]
-        if "concrete_floor_paint" in sub: total += cfg["concrete_floor_paint_flat_rate"]
+        if "concrete_floor_paint" in sub: total += sqft * cfg["concrete_floor_paint_per_sqft"]
         if d.get("has_closet"):           total += cfg["closet_flat_rate"]
         total += d.get("num_doors", 0)      * cfg["per_door_rate"]
         total += d.get("patches_small", 0)  * cfg["patch_small_rate"]
