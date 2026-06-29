@@ -53,7 +53,11 @@ class PricingEngine:
 
     def _price_carpet_installation(self, d: dict, container) -> float:
         cfg = self.config["Carpet_Installation"]
-        total = container.ceiling_area * cfg["per_sqft_rate"] * cfg["waste_factor_multiplier"]
+        tier = d.get("carpet_tier")
+        price_tier_key = f"{tier}_carpet_per_sqft_rate"
+        per_sqft_rate = cfg.get(price_tier_key, cfg["tier1_carpet_per_sqft_rate"])
+
+        total = container.ceiling_area * per_sqft_rate * cfg["waste_factor_multiplier"]
         total += d.get("transitions", 0) * cfg["per_transition_rate"]
         total += d.get("stair_steps", 0) * cfg["per_stair_step_rate"]
         if d.get("kilz_required"):  total += cfg["kilz_treatment_flat"]

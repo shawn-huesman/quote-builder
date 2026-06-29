@@ -84,7 +84,9 @@ PRICING_CONFIG = {
     },
     "Carpet_Installation": {
         "waste_factor_multiplier": 1.20,
-        "per_sqft_rate": 5.00,
+        "tier1_carpet_per_sqft_rate": 3.60,
+        "tier2_carpet_per_sqft_rate": 4.70,
+        "tier3_carpet_per_sqft_rate": 5.85,
         "per_transition_rate": 50.00,
         "per_stair_step_rate": 7.00,
         "kilz_treatment_flat": 150.00,
@@ -237,6 +239,10 @@ QUOTE_SCHEMA = {
             "required": ["service_description", "transitions", "stair_steps", "kilz_required", "demo_required", "furniture_move"],
             "properties": {
               "service_description": {"type": "STRING"},
+              "carpet_tier": {
+                "type": "STRING",
+                "enum": ["tier1", "tier2", "tier3"]
+              },
               "transitions": {"type": "INTEGER"},
               "stair_steps": {"type": "INTEGER"},
               "kilz_required": {"type": "BOOLEAN"},
