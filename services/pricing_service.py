@@ -12,7 +12,13 @@ class PricingEngine:
         if not method:
             logger.warning(f"No pricing rule for task type: {task_type}")
             return 0.0
-        return method(details, container)
+
+        price = method(details, container)
+        task_lower = task_type.lower()
+        if "carpet" not in task_lower and "flooring" not in task_lower:
+            price = round(price / 5) * 5
+
+        return float(price)
 
     def _price_interior_painting(self, d: dict, container) -> float:
         cfg = self.config["Interior_Painting"]
