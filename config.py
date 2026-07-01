@@ -43,6 +43,7 @@ CRITICAL RULES:
 - Use clear descriptive sentences for service_description.
 - For Landscape_Clean_Up tasks: If there is anything specified inside the cleanup request notes, add 1 per man day rate unless specified otherwise. Additionally, calculate that each mulch bed requires exactly 20 bags of mulch.
 - For Home_Clear_Outs tasks: Calculate that using a dumpster of any size requires 2 people.
+- For Carpet_Installation tasks: If carpet tasks are specified, assume carpet tier 1 unless specified otherwise. Additionally, if demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 """
 
 PRICING_CONFIG = {
@@ -88,10 +89,12 @@ PRICING_CONFIG = {
         "tier2_carpet_per_sqft_rate": 4.70,
         "tier3_carpet_per_sqft_rate": 5.85,
         "per_transition_rate": 50.00,
+        "sqft_per_transition": 1000.00,
         "per_stair_step_rate": 7.00,
-        "kilz_treatment_flat": 150.00,
-        "demo_prep_flat": 125.00,
-        "furniture_move_flat": 75.00,
+        "kilz_treatment_per_sqft": 0.38,
+        "demo_prep_per_sqft": 0.70,
+        "ceramic_demo_prep_per_sqft": 2.50,
+        "furniture_move_per_sqft": 0.50,
     },
     "Flooring_Installation": {
         "waste_factor_multiplier": 1.10,
@@ -236,17 +239,17 @@ QUOTE_SCHEMA = {
 
           "Carpet_Installation_Details": {
             "type": "OBJECT",
-            "required": ["service_description", "transitions", "stair_steps", "kilz_required", "demo_required", "furniture_move"],
+            "required": ["service_description", "carpet_tier", "stair_steps", "kilz_required", "demo_required", "ceramic_demo_required", "furniture_move"],
             "properties": {
               "service_description": {"type": "STRING"},
               "carpet_tier": {
                 "type": "STRING",
                 "enum": ["tier1", "tier2", "tier3"]
               },
-              "transitions": {"type": "INTEGER"},
               "stair_steps": {"type": "INTEGER"},
               "kilz_required": {"type": "BOOLEAN"},
               "demo_required": {"type": "BOOLEAN"},
+              "ceramic_demo_required": {"type": "BOOLEAN"},
               "furniture_move": {"type": "BOOLEAN"}
             }
           },

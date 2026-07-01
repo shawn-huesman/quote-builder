@@ -53,16 +53,18 @@ class PricingEngine:
 
     def _price_carpet_installation(self, d: dict, container) -> float:
         cfg = self.config["Carpet_Installation"]
+        ceiling_sqft = container.ceiling_area
         tier = d.get("carpet_tier")
         price_tier_key = f"{tier}_carpet_per_sqft_rate"
         per_sqft_rate = cfg.get(price_tier_key, cfg["tier1_carpet_per_sqft_rate"])
 
-        total = container.ceiling_area * per_sqft_rate * cfg["waste_factor_multiplier"]
-        total += d.get("transitions", 0) * cfg["per_transition_rate"]
+        total = ceiling_sqft * per_sqft_rate * cfg["waste_factor_multiplier"]
+        total += (ceiling_sqft / cfg["sqft_per_transition"]) * cfg["per_transition_rate"]
         total += d.get("stair_steps", 0) * cfg["per_stair_step_rate"]
-        if d.get("kilz_required"):  total += cfg["kilz_treatment_flat"]
-        if d.get("demo_required"):  total += cfg["demo_prep_flat"]
-        if d.get("furniture_move"): total += cfg["furniture_move_flat"]
+        if d.get("kilz_required"):  total += cfg["kilz_treatment_per_sqft"] * ceiling_sqft
+        if d.get("demo_required"):  total += cfg["demo_prep_per_sqft"] * ceiling_sqft
+        if d.get("ceramic_demo_required"):  total += cfg["ceramic_demo_prep_per_sqft"] * ceiling_sqft
+        if d.get("furniture_move"): total += cfg["furniture_move_per_sqft"] * ceiling_sqft
         return total
 
     def _price_flooring_installation(self, d: dict, container) -> float:
