@@ -119,7 +119,9 @@ PRICING_CONFIG = {
         "furniture_move_per_sqft": 0.50,
     },
     "Carpet_Cleaning": {
-        "per_room_rate": 95.00
+        "per_room_rate": 95.00,
+        "pet_treatment_rate": 35.00,
+        "minimum_service_price": 50.00
     },
     "Carpet_Removal": {
         "room_flat_rate": 150.00
@@ -284,10 +286,11 @@ QUOTE_SCHEMA = {
 
           "Carpet_Cleaning_Details": {
             "type": "OBJECT",
-            "required": ["service_description", "room_count"],
+            "required": ["service_description", "room_count", "pet_treatment_required"],
             "properties": {
               "service_description": {"type": "STRING"},
-              "room_count": {"type": "INTEGER"}
+              "room_count": {"type": "INTEGER"},
+              "pet_treatment_required": {"type": "BOOLEAN"}
             }
           },
 

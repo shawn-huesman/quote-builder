@@ -89,7 +89,14 @@ class PricingEngine:
         return total
 
     def _price_carpet_cleaning(self, d: dict, container) -> float:
-        return d.get("room_count", 0) * self.config["Carpet_Cleaning"]["per_room_rate"]
+        cfg = self.config["Carpet_Cleaning"]
+
+        total = d.get("room_count", 0) * cfg["per_room_rate"]
+        if d.get("pet_treatment_required"): total += d.get("room_count", 0) * cfg["pet_treatment_rate"]
+
+        if total > 0:
+            total = max(total, cfg["minimum_service_price"])
+        return total
 
     def _price_carpet_removal(self, d: dict, container) -> float:
         return self.config["Carpet_Removal"]["room_flat_rate"] if d.get("requested") else 0.0
