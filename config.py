@@ -44,7 +44,7 @@ CRITICAL RULES:
 - For Home_Clear_Outs tasks: Calculate that using a dumpster of any size requires 2 people.
 - For Carpet_Installation tasks: If carpet tasks are specified, assume carpet tier 1 unless specified otherwise. Additionally, if demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 - For Flooring_Installation tasks: If demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
-
+- For Exterior_Painting tasks: Always apply this task to the largest space (not room)
 """
 
 PRICING_CONFIG = {
