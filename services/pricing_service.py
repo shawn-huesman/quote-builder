@@ -143,12 +143,14 @@ class PricingEngine:
 
     def _price_pressure_washing(self, d: dict, container) -> float:
         cfg = self.config["Pressure_Washing"]
+        sqft = container.paintable_sqft
 
         total = 0.00
         if d.get("driveway_requested"): total += cfg["driveway_flat"]
         if d.get("porch_requested"): total += cfg["porch_flat"]
         if d.get("sidewalk_requested"): total += cfg["sidewalk_flat"]
         if d.get("deck_requested"): total += cfg["deck_flat"]
+        if d.get("exterior_siding_requested"): total += cfg["exterior_siding_rate"] * sqft
 
         return total
 
