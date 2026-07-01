@@ -60,6 +60,9 @@ PRICING_CONFIG = {
         "patch_small_rate": 15.00,
         "patch_medium_rate": 35.00,
         "patch_large_rate": 75.00,
+        "minimum_wall_price": 225.00,
+        "minimum_ceiling_price": 50.00,
+        "minimum_trim_price": 65.00,
     },
     "Exterior_Painting": {
         "per_interior_sqft_rate": 3.50,
