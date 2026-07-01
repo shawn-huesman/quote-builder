@@ -44,6 +44,8 @@ CRITICAL RULES:
 - For Landscape_Clean_Up tasks: If there is anything specified inside the cleanup request notes, add 1 per man day rate unless specified otherwise. Additionally, calculate that each mulch bed requires exactly 20 bags of mulch.
 - For Home_Clear_Outs tasks: Calculate that using a dumpster of any size requires 2 people.
 - For Carpet_Installation tasks: If carpet tasks are specified, assume carpet tier 1 unless specified otherwise. Additionally, if demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
+- For Flooring_Installation tasks: If demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
+
 """
 
 PRICING_CONFIG = {
@@ -111,6 +113,10 @@ PRICING_CONFIG = {
         "furniture_move_flat": 100.00,
         "per_appliance_rate": 52.50,
         "per_toilet_rate": 42.00,
+        "kilz_treatment_per_sqft": 0.38,
+        "demo_prep_per_sqft": 0.70,
+        "ceramic_demo_prep_per_sqft": 2.50,
+        "furniture_move_per_sqft": 0.50,
     },
     "Carpet_Cleaning": {
         "per_room_rate": 95.00
@@ -259,7 +265,7 @@ QUOTE_SCHEMA = {
 
           "Flooring_Installation_Details": {
             "type": "OBJECT",
-            "required": ["service_description", "material", "transitions", "kilz_required", "furniture_move", "appliances_to_move", "toilets_to_reset"],
+            "required": ["service_description", "material", "transitions", "kilz_required", "demo_required", "ceramic_demo_required", "furniture_move", "appliances_to_move", "toilets_to_reset"],
             "properties": {
               "service_description": {"type": "STRING"},
               "material": {
@@ -268,6 +274,8 @@ QUOTE_SCHEMA = {
               },
               "transitions": {"type": "INTEGER"},
               "kilz_required": {"type": "BOOLEAN"},
+              "demo_required": {"type": "BOOLEAN"},
+              "ceramic_demo_required": {"type": "BOOLEAN"},
               "furniture_move": {"type": "BOOLEAN"},
               "appliances_to_move": {"type": "INTEGER"},
               "toilets_to_reset": {"type": "INTEGER"}

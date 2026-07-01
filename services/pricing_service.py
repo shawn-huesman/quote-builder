@@ -82,8 +82,10 @@ class PricingEngine:
         total += d.get("transitions", 0)        * cfg["per_transition_rate"]
         total += d.get("appliances_to_move", 0) * cfg["per_appliance_rate"]
         total += d.get("toilets_to_reset", 0)   * cfg["per_toilet_rate"]
-        if d.get("kilz_required"):  total += cfg["kilz_treatment_flat"]
-        if d.get("furniture_move"): total += cfg["furniture_move_flat"]
+        if d.get("kilz_required"):  total += cfg["kilz_treatment_per_sqft"] * sqft
+        if d.get("demo_required"):  total += cfg["demo_prep_per_sqft"] * sqft
+        if d.get("ceramic_demo_required"):  total += cfg["ceramic_demo_prep_per_sqft"] * sqft
+        if d.get("furniture_move"): total += cfg["furniture_move_per_sqft"] * sqft
         return total
 
     def _price_carpet_cleaning(self, d: dict, container) -> float:
