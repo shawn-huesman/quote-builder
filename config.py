@@ -32,6 +32,7 @@ The only valid task_type values are:
  
 ROOM NAME RULES:
 - If a task belongs to a specific room, set room_name to that room's exact label as provided in the input.
+- Never add a task with the same name or key inside of a space if its inside of any of the space's containing rooms.
 - Never leave room_name empty.
  
 CRITICAL RULES:
