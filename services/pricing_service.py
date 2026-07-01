@@ -142,7 +142,15 @@ class PricingEngine:
         )
 
     def _price_pressure_washing(self, d: dict, container) -> float:
-        return self.config["Pressure_Washing"]["standalone_flat"] if d.get("requested") else 0.0
+        cfg = self.config["Pressure_Washing"]
+
+        total = 0.00
+        if d.get("driveway_requested"): total += cfg["driveway_flat"]
+        if d.get("porch_requested"): total += cfg["porch_flat"]
+        if d.get("sidewalk_requested"): total += cfg["sidewalk_flat"]
+        if d.get("deck_requested"): total += cfg["deck_flat"]
+
+        return total
 
     def _price_window_washing(self, d: dict, container) -> float:
         return d.get("pane_count", 0) * self.config["Window_Washing"]["per_pane_rate"]

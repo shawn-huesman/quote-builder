@@ -155,7 +155,10 @@ PRICING_CONFIG = {
         "per_mulch_bag_rate": 8.50
     },
     "Pressure_Washing": {
-        "standalone_flat": 250.00,
+        "driveway_flat": 250.00,
+        "porch_flat": 150.00,
+        "sidewalk_flat": 150.00,
+        "deck_flat": 200.00,
     },
     "Window_Washing": {
         "per_pane_rate": 30.00
@@ -357,10 +360,13 @@ QUOTE_SCHEMA = {
 
           "Pressure_Washing_Details": {
             "type": "OBJECT",
-            "required": ["service_description", "requested"],
+            "required": ["service_description", "driveway_requested", "porch_requested", "sidewalk_requested", "deck_requested"],
             "properties": {
               "service_description": {"type": "STRING"},
-              "requested": {"type": "BOOLEAN"}
+              "driveway_requested": {"type": "BOOLEAN"},
+              "porch_requested": {"type": "BOOLEAN"},
+              "sidewalk_requested": {"type": "BOOLEAN"},
+              "deck_requested": {"type": "BOOLEAN"}
             }
           },
 
