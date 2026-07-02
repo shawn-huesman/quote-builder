@@ -160,9 +160,3 @@ class PricingEngine:
 
     def _price_window_washing(self, d: dict, container) -> float:
         return d.get("pane_count", 0) * self.config["Window_Washing"]["per_pane_rate"]
-
-    def _apply_psychology(self, price: float) -> float:
-        rules = self.config["psychology_rules"]
-        if price > rules["apply_above_threshold"]:
-            return int(price // 100) * 100 + rules["charm_ends_with"]
-        return price
