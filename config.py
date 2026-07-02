@@ -49,6 +49,7 @@ CRITICAL RULES:
 
 PRICING_CONFIG = {
     "regional_multipliers": 1.00,
+    "royalty_multiplier": 1.0725,
     "Interior_Painting": {
         "walls_per_sqft": 1.30,
         "ceiling_per_sqft": 0.75,

@@ -14,6 +14,10 @@ class PricingEngine:
             return 0.0
 
         price = method(details, container)
+
+        royalty_multiplier = self.config.get("royalty_multiplier", 1.0)
+        price *= royalty_multiplier
+
         task_lower = task_type.lower()
         if "carpet" not in task_lower and "flooring" not in task_lower:
             price = round(price / 5) * 5
