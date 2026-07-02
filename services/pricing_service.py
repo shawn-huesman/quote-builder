@@ -24,10 +24,13 @@ class PricingEngine:
         cfg = self.config["Interior_Painting"]
         sqft = container.paintable_sqft
         perimeter = container.perimeter
+        ceiling_sqft = container.ceiling_area
+        wall_sqft = container.wall_area
+
         total = 0.0
         sub = d.get("sub_tasks", [])
-        if "walls" in sub:                total += max(sqft * cfg["walls_per_sqft"], cfg["minimum_wall_price"])
-        if "ceiling" in sub:              total += max(sqft * cfg["ceiling_per_sqft"], cfg["minimum_ceiling_price"])
+        if "walls" in sub:                total += max(wall_sqft * cfg["walls_per_sqft"], cfg["minimum_wall_price"])
+        if "ceiling" in sub:              total += max(ceiling_sqft * cfg["ceiling_per_sqft"], cfg["minimum_ceiling_price"])
         if "trim" in sub:                 total += max(perimeter * cfg["trim_per_lnft"], cfg["minimum_trim_price"])
         if "wallpaper_removal" in sub:    total += sqft * cfg["wallpaper_per_sqft"]
         if "priming" in sub:              total += sqft * cfg["priming_per_sqft"]
