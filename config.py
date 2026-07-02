@@ -42,7 +42,6 @@ CRITICAL RULES:
 - Every task must include its corresponding Details object (e.g. Interior_Painting_Details for Interior_Painting).
 - Use clear descriptive sentences for service_description.
 - For Landscape_Clean_Up tasks: If there is anything specified inside the cleanup request notes, add 1 per man day rate unless specified otherwise. Additionally, calculate that each mulch bed requires exactly 20 bags of mulch.
-- For Home_Clear_Outs tasks: Calculate that using a dumpster of any size requires 2 people.
 - For Carpet_Installation tasks: If carpet tasks are specified, assume carpet tier 1 unless specified otherwise. Additionally, if demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 - For Flooring_Installation tasks: If demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 - For Exterior_Painting tasks: Always apply this task to the largest space (not room)
@@ -129,8 +128,11 @@ PRICING_CONFIG = {
     "Home_Clear_Outs": {
         "per_box_truck_load": 550.00,
         "dumpster_20yd": 550.00,
-        "dumpster_30yd": 620.00,
-        "dumpster_40yd": 700.00,
+        "dumpster_30yd": 650.00,
+        "dumpster_40yd": 750.00,
+        "people_needed_per_dumpster_20yd": 2,
+        "people_needed_per_dumpster_30yd": 2,
+        "people_needed_per_dumpster_40yd": 3,
         "per_person_rate": 200.00,
         "margin_multiplier": 2.00,
         "per_tire": 20.00,

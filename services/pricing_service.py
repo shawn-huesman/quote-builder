@@ -103,6 +103,10 @@ class PricingEngine:
 
     def _price_home_clear_outs(self, d: dict, container) -> float:
         cfg = self.config["Home_Clear_Outs"]
+        people_needed = (d.get("dumpster_20yd_count", 0) * cfg["people_needed_per_dumpster_20yd"] +
+        d.get("dumpster_30yd_count", 0) * cfg["people_needed_per_dumpster_30yd"] +
+        d.get("dumpster_40yd_count", 0) * cfg["people_needed_per_dumpster_40yd"])
+
         return (
             d.get("box_truck_loads", 0)     * cfg["per_box_truck_load"] +
             d.get("dumpster_20yd_count", 0) * cfg["dumpster_20yd"] +
@@ -111,7 +115,7 @@ class PricingEngine:
             d.get("tire_count", 0)          * cfg["per_tire"] +
             d.get("mattress_count", 0)      * cfg["per_mattress"] +
             d.get("refrigerator_count", 0)  * cfg["per_refrigerator"] +
-            d.get("people_needed", 0) * cfg["per_person_rate"]
+            people_needed * cfg["per_person_rate"]
         ) * cfg["margin_multiplier"]
 
     def _price_light_handyman_work(self, d: dict, container) -> float:
