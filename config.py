@@ -43,7 +43,7 @@ CRITICAL RULES:
 - Use clear descriptive sentences for service_description.
 - For Landscape_Clean_Up tasks: If there is anything specified inside the cleanup request notes, add 1 per man day rate unless specified otherwise. Additionally, calculate that each mulch bed requires exactly 20 bags of mulch.
 - For Carpet_Installation tasks: If carpet tasks are specified, assume carpet tier 1 unless specified otherwise. Additionally, if demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
-- For Flooring_Installation tasks: If demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
+- For Flooring_Installation tasks: Assume demo is not required by default. If demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 - For Exterior_Painting tasks: Always apply this task to the largest space (not room)
 """
 
