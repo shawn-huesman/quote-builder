@@ -39,6 +39,7 @@ def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
     """
     rooms = []
     SQUARE_METERS_TO_SQUARE_FEET = 10.76398
+    METERS_TO_FEET = 3.28084
 
     if isinstance(data, dict):
         # Identify a Room leaf node
@@ -59,7 +60,7 @@ def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
                     "label": label,
                     "paintable_sqft": float(paintable_sqft or 0) * SQUARE_METERS_TO_SQUARE_FEET,
                     "ceiling_area": float(ceiling_area or 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                    "perimeter": float(perimeter or 0) * SQUARE_METERS_TO_SQUARE_FEET,
+                    "perimeter": float(perimeter or 0) * METERS_TO_FEET,
                     "wall_area": float(wall_area or 0) * SQUARE_METERS_TO_SQUARE_FEET,
                     "doors": int(doors or 0),
                     "windows": int(windows or 0),
