@@ -31,6 +31,7 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
         return 502, {"message": "VertexAI Parsing Error"}
 
     apply_pricing(job)
+    apply_service_language(job)
 
     payload = build_payload(job)
     logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
@@ -49,6 +50,61 @@ def apply_pricing(job: QuoteJob):
                 task.price = engine.price_task(task.task_type, task.details, room)
 
     logger.info(f"===Pricing Applied===:")
+    _prettyprint(job)
+
+
+def apply_service_language(job: QuoteJob):
+    verbiage_map = {
+        "Interior_Painting": {
+            "num_doors": lambda v: f"{v} painted door" if v == 1 else f"{v} painted doors",
+            "has_closet": lambda v: "closet painting" if v else "",
+            "patches_small": lambda v: f"{v} small wall patch" if v == 1 else f"{v} small wall patches",
+            "patches_medium": lambda v: f"{v} medium wall patch" if v == 1 else f"{v} medium wall patches",
+            "patches_large": lambda v: f"{v} large wall patch" if v == 1 else f"{v} large wall patches",
+        },
+        "Carpet_Installation": {
+            "carpet_tier": lambda v: f"{v.replace('tier', 'tier ')} carpet",
+            "stair_steps": lambda v: f"{v} stair step" if v == 1 else f"{v} stair steps",
+            "kilz_required": lambda v: "Kilz primer application" if v else "",
+            "demo_required": lambda v: "old carpet demo" if v else "",
+            "ceramic_demo_required": lambda v: "ceramic tile demo" if v else "",
+            "furniture_move": lambda v: "furniture moving service" if v else "",
+        }
+    }
+
+    def process_task(task: Task):
+        if task.task_type not in verbiage_map:
+            return
+
+        clean_task_type = task.task_type.replace("_", " ")
+        task_rules = verbiage_map[task.task_type]
+        inclusions = []
+
+        sub_tasks = task.details.get("sub_tasks", [])
+        for sub in sub_tasks:
+            prefix = "installing" if task.task_type == "Carpet_Installation" else "painting the"
+            inclusions.append(f"{prefix} {sub}")
+
+        for key, format_func in task_rules.items():
+            val = task.details.get(key)
+            if val:
+                verbiage = format_func(val)
+                if verbiage:
+                    inclusions.append(verbiage)
+
+        if inclusions:
+            bulleted_items = "\n" + "\n".join([f"- {item.capitalize()}" for item in inclusions])
+            task.service_description += f"\n\nThis {clean_task_type} price includes:{bulleted_items}"
+
+    for space in job.spaces:
+        for task in space.tasks:
+            process_task(task)
+
+        for room in space.rooms:
+            for task in room.tasks:
+                process_task(task)
+
+    logger.info(f"===Service Language Applied===:")
     _prettyprint(job)
 
 
@@ -199,7 +255,8 @@ def _normalize(s: str) -> str:
 
 
 def _prettyprint(obj):
-    logger.info(json.dumps(dataclasses.asdict(obj), indent=2))
+    # logger.info(json.dumps(dataclasses.asdict(obj), indent=2))
+    logger.info(json.dumps(dataclasses.asdict(obj)))
 
 
 def _build_prompt(base: str, job: QuoteJob) -> str:
