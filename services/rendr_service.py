@@ -64,7 +64,7 @@ def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
                     "wall_area": float(wall_area or 0) * SQUARE_METERS_TO_SQUARE_FEET,
                     "doors": int(doors or 0),
                     "windows": int(windows or 0),
-                    # "notes": data.get("notes") or ""
+                    "notes": data.get("notes") or ""
                 })
             return rooms
 
