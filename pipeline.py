@@ -54,19 +54,6 @@ def apply_pricing(job: QuoteJob):
 
 
 def apply_service_language(job: QuoteJob):
-    CARPET_CONFIG = {
-        "base_text": "Removal, haul-away, and disposal of old carpet. Installation of new {tier} carpet and carpet pad in the following areas:\n\n{rooms}",
-        "addons_text": "\n\nThe carpet installation price includes {addons}.",
-        "footer": "\n\nAn additional fee of $0.50 per square ft can apply if HOMEstretch is required to move furniture or remove excess clutter prior to the installation of the new carpet."
-    }
-
-    FLOORING_CONFIG = {
-        "base_text": "Installation of new {display_name} and quarter round in the following areas:\n\n{rooms}",
-        "addons_text": "\n\nThe {display_name} price includes {addons}",
-        "disclaimer": "\n\nHOMEstretch will install new {display_name} over existing floor unless otherwise instructed by client. If existing floor needs to be removed prior to installation, HOMEstretch will bring it to client's attention.",
-        "footer": "\n\nAn additional fee of $0.50 per square ft can apply if HOMEstretch is required to move furniture or excess clutter during the installation of the {display_name} flooring."
-    }
-
     ADDON_MAPPINGS = {
         "kilz_required": "priming the subfloors",
         "furniture_move": "moving the furniture"
@@ -84,61 +71,45 @@ def apply_service_language(job: QuoteJob):
             return f"{addons_list[0]} and {addons_list[1]}"
         return ", ".join(addons_list[:-1]) + f", and {addons_list[-1]}"
 
-    def extract_addons(details: dict) -> tuple[list, bool]:
+    def extract_addons(details: dict) -> list:
         addons = []
-        has_demolition = any(details.get(key) for key in DEMO_KEYS)
-
         if details.get("kilz_required"):
             addons.append(ADDON_MAPPINGS["kilz_required"])
-        if has_demolition:
+        if any(details.get(key) for key in DEMO_KEYS):
             addons.append(DEMO_TEXT)
         if details.get("furniture_move"):
             addons.append(ADDON_MAPPINGS["furniture_move"])
+        return addons
 
-        return addons, has_demolition
-
-    def build_carpet_description(details: dict, rooms_list: str) -> str:
-        raw_tier = str(details.get("carpet_tier", "Tier 1"))
-        tier = raw_tier.replace("tier", "Tier ").strip()
-        addons, _ = extract_addons(details)
-
-        addons_sentence = CARPET_CONFIG["addons_text"].format(addons=format_addons(addons)) if addons else ""
-        base = CARPET_CONFIG["base_text"].format(tier=tier, rooms=rooms_list)
-
-        return f"{base}{addons_sentence}{CARPET_CONFIG['footer']}"
-
-    def build_flooring_description(task_type: str, details: dict, rooms_list: str) -> str:
-        display_name = "LVP" if "LVP" in task_type else "LVT"
-        addons, has_demolition = extract_addons(details)
-
-        addons_sentence = FLOORING_CONFIG["addons_text"].format(display_name=display_name,
-                                                                addons=format_addons(addons)) if addons else ""
-        disclaimer = "" if has_demolition else FLOORING_CONFIG["disclaimer"].format(display_name=display_name)
-        base = FLOORING_CONFIG["base_text"].format(display_name=display_name, rooms=rooms_list)
-
-        return f"{base}{addons_sentence}{disclaimer}{FLOORING_CONFIG['footer']}"
-
-    def process_task(task: Task, room_names: list):
+    def process_task(task: Task):
         if task.task_type not in ["Carpet_Installation", "LVP_Installation", "LVT_Installation"]:
             return
 
         details = task.details or {}
-        rooms_list = "\n".join([f"-{room}" for room in room_names])
+        addons = extract_addons(details)
+
+        if not addons:
+            return
 
         if task.task_type == "Carpet_Installation":
-            task.service_description = build_carpet_description(details, rooms_list)
+            task_display = "carpet"
+        elif task.task_type == "LVP_Installation":
+            task_display = "LVP"
         else:
-            task.service_description = build_flooring_description(task.task_type, details, rooms_list)
+            task_display = "LVT"
+
+        addons_text = format_addons(addons)
+        addons_sentence = f"\n\nThe {task_display} installation price includes {addons_text}."
+
+        task.service_description += addons_sentence
 
     for space in job.spaces:
-        space_room_names = [room.label for room in space.rooms] if space.rooms else [space.name]
-
         for task in space.tasks:
-            process_task(task, space_room_names)
+            process_task(task)
 
         for room in space.rooms:
             for task in room.tasks:
-                process_task(task, [room.label])
+                process_task(task)
 
     logger.info("===Service Language Applied===")
     _prettyprint(job)
