@@ -54,57 +54,93 @@ def apply_pricing(job: QuoteJob):
 
 
 def apply_service_language(job: QuoteJob):
-    verbiage_map = {
-        "Interior_Painting": {
-            "num_doors": lambda v: f"{v} painted door" if v == 1 else f"{v} painted doors",
-            "has_closet": lambda v: "closet painting" if v else "",
-            "patches_small": lambda v: f"{v} small wall patch" if v == 1 else f"{v} small wall patches",
-            "patches_medium": lambda v: f"{v} medium wall patch" if v == 1 else f"{v} medium wall patches",
-            "patches_large": lambda v: f"{v} large wall patch" if v == 1 else f"{v} large wall patches",
-        },
-        "Carpet_Installation": {
-            "carpet_tier": lambda v: f"{v.replace('tier', 'tier ')} carpet",
-            "stair_steps": lambda v: f"{v} stair step" if v == 1 else f"{v} stair steps",
-            "kilz_required": lambda v: "Kilz primer application" if v else "",
-            "demo_required": lambda v: "old carpet demo" if v else "",
-            "ceramic_demo_required": lambda v: "ceramic tile demo" if v else "",
-            "furniture_move": lambda v: "furniture moving service" if v else "",
-        }
+    CARPET_CONFIG = {
+        "base_text": "Removal, haul-away, and disposal of old carpet. Installation of new {tier} carpet and carpet pad in the following areas:\n\n{rooms}",
+        "addons_text": "\n\nThe carpet installation price includes {addons}.",
+        "footer": "\n\nAn additional fee of $0.50 per square ft can apply if HOMEstretch is required to move furniture or remove excess clutter prior to the installation of the new carpet."
     }
 
-    def process_task(task: Task):
-        if task.task_type not in verbiage_map:
+    FLOORING_CONFIG = {
+        "base_text": "Installation of new {display_name} and quarter round in the following areas:\n\n{rooms}",
+        "addons_text": "\n\nThe {display_name} price includes {addons}",
+        "disclaimer": "\n\nHOMEstretch will install new {display_name} over existing floor unless otherwise instructed by client. If existing floor needs to be removed prior to installation, HOMEstretch will bring it to client's attention.",
+        "footer": "\n\nAn additional fee of $0.50 per square ft can apply if HOMEstretch is required to move furniture or excess clutter during the installation of the {display_name} flooring."
+    }
+
+    ADDON_MAPPINGS = {
+        "kilz_required": "priming the subfloors",
+        "furniture_move": "moving the furniture"
+    }
+
+    DEMO_KEYS = ["demo_required", "ceramic_demo_required"]
+    DEMO_TEXT = "demolition and removal of existing flooring"
+
+    def format_addons(addons_list: list) -> str:
+        if not addons_list:
+            return ""
+        if len(addons_list) == 1:
+            return addons_list[0]
+        if len(addons_list) == 2:
+            return f"{addons_list[0]} and {addons_list[1]}"
+        return ", ".join(addons_list[:-1]) + f", and {addons_list[-1]}"
+
+    def extract_addons(details: dict) -> tuple[list, bool]:
+        addons = []
+        has_demolition = any(details.get(key) for key in DEMO_KEYS)
+
+        if details.get("kilz_required"):
+            addons.append(ADDON_MAPPINGS["kilz_required"])
+        if has_demolition:
+            addons.append(DEMO_TEXT)
+        if details.get("furniture_move"):
+            addons.append(ADDON_MAPPINGS["furniture_move"])
+
+        return addons, has_demolition
+
+    def build_carpet_description(details: dict, rooms_list: str) -> str:
+        raw_tier = str(details.get("carpet_tier", "Tier 1"))
+        tier = raw_tier.replace("tier", "Tier ").strip()
+        addons, _ = extract_addons(details)
+
+        addons_sentence = CARPET_CONFIG["addons_text"].format(addons=format_addons(addons)) if addons else ""
+        base = CARPET_CONFIG["base_text"].format(tier=tier, rooms=rooms_list)
+
+        return f"{base}{addons_sentence}{CARPET_CONFIG['footer']}"
+
+    def build_flooring_description(task_type: str, details: dict, rooms_list: str) -> str:
+        display_name = "LVP" if "LVP" in task_type else "LVT"
+        addons, has_demolition = extract_addons(details)
+
+        addons_sentence = FLOORING_CONFIG["addons_text"].format(display_name=display_name,
+                                                                addons=format_addons(addons)) if addons else ""
+        disclaimer = "" if has_demolition else FLOORING_CONFIG["disclaimer"].format(display_name=display_name)
+        base = FLOORING_CONFIG["base_text"].format(display_name=display_name, rooms=rooms_list)
+
+        return f"{base}{addons_sentence}{disclaimer}{FLOORING_CONFIG['footer']}"
+
+    def process_task(task: Task, room_names: list):
+        if task.task_type not in ["Carpet_Installation", "LVP_Installation", "LVT_Installation"]:
             return
 
-        clean_task_type = task.task_type.replace("_", " ")
-        task_rules = verbiage_map[task.task_type]
-        inclusions = []
+        details = task.details or {}
+        rooms_list = "\n".join([f"-{room}" for room in room_names])
 
-        sub_tasks = task.details.get("sub_tasks", [])
-        for sub in sub_tasks:
-            prefix = "installing" if task.task_type == "Carpet_Installation" else "painting the"
-            inclusions.append(f"{prefix} {sub}")
-
-        for key, format_func in task_rules.items():
-            val = task.details.get(key)
-            if val:
-                verbiage = format_func(val)
-                if verbiage:
-                    inclusions.append(verbiage)
-
-        if inclusions:
-            bulleted_items = "\n" + "\n".join([f"- {item.capitalize()}" for item in inclusions])
-            task.service_description += f"\n\nThis {clean_task_type} price includes:{bulleted_items}"
+        if task.task_type == "Carpet_Installation":
+            task.service_description = build_carpet_description(details, rooms_list)
+        else:
+            task.service_description = build_flooring_description(task.task_type, details, rooms_list)
 
     for space in job.spaces:
+        space_room_names = [room.label for room in space.rooms] if space.rooms else [space.name]
+
         for task in space.tasks:
-            process_task(task)
+            process_task(task, space_room_names)
 
         for room in space.rooms:
             for task in room.tasks:
-                process_task(task)
+                process_task(task, [room.label])
 
-    logger.info(f"===Service Language Applied===:")
+    logger.info("===Service Language Applied===")
     _prettyprint(job)
 
 
