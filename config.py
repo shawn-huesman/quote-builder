@@ -167,7 +167,8 @@ PRICING_CONFIG = {
         "porch_flat": 150.00,
         "sidewalk_flat": 150.00,
         "deck_flat": 200.00,
-        "exterior_siding_rate": 0.25
+        "exterior_siding_rate": 0.25,
+        "minimum_service_price": 150.00
     },
     "Window_Washing": {
         "per_pane_rate": 30.00

@@ -174,6 +174,7 @@ class PricingEngine:
         if d.get("deck_requested"): total += cfg["deck_flat"]
         if d.get("exterior_siding_requested"): total += cfg["exterior_siding_rate"] * sqft
 
+        total = max(total, cfg["minimum_service_price"])
         return total
 
     def _price_window_washing(self, d: dict, container) -> float:
