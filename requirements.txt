@@ -3,3 +3,4 @@ google-auth
 requests
 boto3
 botocore[crt]
+openpyxl
