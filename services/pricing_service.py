@@ -407,18 +407,6 @@ class PayoutPricingEngine:
 
         return total
 
-    def _price_home_clear_outs(self, d: dict, container) -> float:
-        cfg = self.config["Home_Clear_Outs"]
-        return (
-                d.get("box_truck_loads", 0) * cfg["per_box_truck_load"]
-                + d.get("dumpster_20yd_count", 0) * cfg["dumpster_20yd"]
-                + d.get("dumpster_30yd_count", 0) * cfg["dumpster_30yd"]
-                + d.get("dumpster_40yd_count", 0) * cfg["dumpster_40yd"]
-                + d.get("tire_count", 0) * cfg["per_tire"]
-                + d.get("mattress_count", 0) * cfg["per_mattress"]
-                + d.get("refrigerator_count", 0) * cfg["per_refrigerator"]
-        )
-
     def _price_landscape_clean_up(self, d: dict, container) -> float:
         cfg = self.config["Landscape_Clean_Up"]
         return (
