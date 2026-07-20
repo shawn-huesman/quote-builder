@@ -22,6 +22,9 @@ class PricingEngine:
         if "carpet" not in task_lower and "flooring" not in task_lower:
             price = round(price / 5) * 5
 
+        if task_lower == "carpet_cleaning":
+            price = round(price / 25) * 25
+
         return float(price)
 
     def _price_interior_painting(self, d: dict, container) -> float:
