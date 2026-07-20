@@ -75,6 +75,7 @@ class PricingEngine:
         total = ceiling_sqft * per_sqft_rate * cfg["waste_factor_multiplier"]
         total += (ceiling_sqft / cfg["sqft_per_transition"]) * cfg["per_transition_rate"]
         total += d.get("stair_steps", 0) * cfg["per_stair_step_rate"]
+        total = max(total, cfg["minimum_installation_price"])
         if d.get("kilz_required"):  total += cfg["kilz_treatment_per_sqft"] * ceiling_sqft
         if d.get("demo_required"):  total += cfg["demo_prep_per_sqft"] * ceiling_sqft
         if d.get("ceramic_demo_required"):  total += cfg["ceramic_demo_prep_per_sqft"] * ceiling_sqft

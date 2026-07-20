@@ -102,6 +102,7 @@ PRICING_CONFIG = {
         "demo_prep_per_sqft": 0.70,
         "ceramic_demo_prep_per_sqft": 2.50,
         "furniture_move_per_sqft": 0.50,
+        "minimum_installation_price": 275.00
     },
     "Flooring_Installation": {
         "waste_factor_multiplier": 1.10,
