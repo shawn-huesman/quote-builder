@@ -18,8 +18,8 @@ HEADER_FONT = Font(name=FONT_NAME, size=11, bold=True, color="FFFFFF")
 HEADER_FILL = PatternFill("solid", fgColor="404040")
 BODY_FONT = Font(name=FONT_NAME, size=11)
 TOTAL_FONT = Font(name=FONT_NAME, size=11, bold=True)
-LOW_MARGIN_FONT = Font(name=FONT_NAME, size=11, color="9C0006")
-LOW_MARGIN_FILL = PatternFill("solid", fgColor="FFC7CE")
+LOW_MARGIN_FONT = Font(color="9C0006")
+LOW_MARGIN_FILL = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
 
 CURRENCY_FMT = '"$"#,##0.00'
 PERCENT_FMT = "0.0%"
@@ -692,11 +692,10 @@ class QuoteExcelBuilder:
     def build_from_job(
         self,
         job,
-        payout_estimator: Optional[Callable[[Any, Any], float]] = None,
         only_priced: bool = True,
     ) -> Workbook:
         records = price_records_from_job(
-            job, payout_estimator=payout_estimator,
+            job,
             only_priced=only_priced,
         )
         return self.build(records, job_meta_from_job(job))
@@ -705,11 +704,10 @@ class QuoteExcelBuilder:
         self,
         path: str,
         job,
-        payout_estimator: Optional[Callable[[Any, Any], float]] = None,
         only_priced: bool = True,
     ) -> None:
         self.build_from_job(
-            job, payout_estimator, only_priced
+            job, only_priced
         ).save(path)
 
 
@@ -720,10 +718,8 @@ def get_attr_if_type(container, attr_name: str, task_type: str, allowed_types: s
 def price_records_from_job(
     job,
     engine=None,
-    payout_estimator: Optional[Callable[[Any, Any], float]] = None,
     only_priced: bool = True,
 ) -> list[PricedTaskRecord]:
-    payout_estimator = payout_estimator or (lambda task, container: 0.0)
 
     def make_record(task, room_name: str, container) -> PricedTaskRecord:
         if engine is not None:
@@ -752,7 +748,7 @@ def price_records_from_job(
             task_type=task.task_type,
             details=task.details,
             price=task.price,
-            payout=payout_estimator(task, container),
+            payout=task.payout_price,
             material_cost=task.material_price,
             scope=task.service_description or None,
             room_area=room_area,
