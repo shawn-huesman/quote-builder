@@ -120,6 +120,8 @@ PRICING_CONFIG = {
         "demo_prep_per_sqft": 0.70,
         "ceramic_demo_prep_per_sqft": 2.50,
         "furniture_move_per_sqft": 0.50,
+        "minimum_lvp_installation_price": 275.00,
+        "minimum_lvt_installation_price": 275.00,
     },
     "Carpet_Cleaning": {
         "per_room_rate": 95.00,

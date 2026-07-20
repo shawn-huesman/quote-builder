@@ -86,11 +86,17 @@ class PricingEngine:
         cfg = self.config["Flooring_Installation"]
         sqft = container.ceiling_area
         perimeter = container.perimeter
-        rate = cfg["per_sqft_rates"].get(d.get("material", "LVP"), cfg["per_sqft_rates"]["LVP"])
+        material = d.get("material", "LVP")
+        rate = cfg["per_sqft_rates"].get(material, cfg["per_sqft_rates"]["LVP"])
+        if material == "LVP":
+            minimum = cfg["minimum_lvp_installation_price"]
+        else:
+            minimum = cfg["minimum_lvt_installation_price"]
         total = (sqft * rate * cfg["waste_factor_multiplier"]) + (perimeter * cfg["quarter_round"])
         total += d.get("transitions", 0)        * cfg["per_transition_rate"]
         total += d.get("appliances_to_move", 0) * cfg["per_appliance_rate"]
         total += d.get("toilets_to_reset", 0)   * cfg["per_toilet_rate"]
+        total = max(total, minimum)
         if d.get("kilz_required"):  total += cfg["kilz_treatment_per_sqft"] * sqft
         if d.get("demo_required"):  total += cfg["demo_prep_per_sqft"] * sqft
         if d.get("ceramic_demo_required"):  total += cfg["ceramic_demo_prep_per_sqft"] * sqft
