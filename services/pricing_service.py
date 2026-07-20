@@ -22,7 +22,7 @@ class PricingEngine:
         if "carpet" not in task_lower and "flooring" not in task_lower:
             price = round(price / 5) * 5
 
-        if task_lower == "carpet_cleaning":
+        if task_lower == "carpet_cleaning" or task_lower == "carpet_removal":
             price = round(price / 25) * 25
 
         return float(price)
