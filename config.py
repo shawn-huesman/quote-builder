@@ -169,6 +169,94 @@ PRICING_CONFIG = {
     }
 }
 
+MATERIAL_PRICING_CONFIG = {
+    "Interior_Painting": {
+        "paint_price_per_gallon": {
+            "walls": 31.19,
+            "ceilings": 23.99,
+            "trim_doors": 49.48,
+            "cabinets_vanities": 56.45,
+            "primer": 35.70,
+        },
+        "coverage_sqft_per_gallon": {
+            "walls": 350.0,
+            "ceilings": 300.0,
+            "trim_doors": 400.0,
+            "primer": 300.0,
+        },
+        "cabinet_doors_gallons_per_door": 0.10,
+        "single_vanity_gallons": 0.50,
+        "double_vanity_gallons": 1.00,
+        "trim_sqft_per_lnft": 0.50,
+        "project_setup_fee": 25.00,
+        "surface_area_scaling_fee_per_sqft": 0.08,
+        "trim_door_caulk_per_room": 10.00,
+        "wallpaper_removal_kit_flat": 35.00,
+    },
+    "Exterior_Painting": {
+        "paint_price_per_gallon": 52.76,
+        "story_surface_multiplier": {1: 1.0, 2: 1.5, 3: 2.0},
+        "coverage_sqft_per_gallon": {
+            "brick": 250.0,
+            "stucco": 250.0,
+            "textured": 250.0,
+            "concrete_block": 250.0,
+            "vinyl": 350.0,
+            "aluminum": 350.0,
+            "wood": 350.0,
+        },
+        "project_setup_fee": 25.00,
+    },
+    "Cabinet_Painting": {
+        "paint_price_per_gallon": 56.45,
+        "door_gallons_per_door": 0.10,
+        "single_vanity_gallons": 0.50,
+        "double_vanity_gallons": 1.00,
+    },
+    "Carpet_Installation": {
+        "material_per_sqft": {"tier1": 1.16, "tier2": 1.70, "tier3": 2.35},
+        "pad_per_sqft": 0.40,
+        "tack_strips_per_sqft": 0.15,
+        "transition_strips_per_1000_sqft": 3.00,
+        "per_step_material_rate": 5.00,
+        "kilz_treatment_per_sqft": 0.27,
+        "demo_vinyl_per_sqft": 0.50,
+        "demo_tile_per_sqft": 2.50,
+        "furniture_move_per_sqft": 0.36,
+    },
+    "Flooring_Installation": {
+        "material_per_sqft": {"LVP": 2.78, "LVT": 3.06},
+        "floor_prep_per_sqft": 0.40,
+        "kilz_treatment_per_sqft": 0.27,
+        "demo_vinyl_per_sqft": 0.50,
+        "demo_tile_per_sqft": 2.50,
+        "furniture_move_per_sqft": 0.36,
+        "per_toilet_rate": 30.00,
+        "per_appliance_rate": 12.50,
+        "transition_strips_per_1000_sqft": 3.00,
+    },
+    "Home_Clear_Outs": {
+        "per_box_truck_load": 550.00,
+        "dumpster_20yd": 550.00,
+        "dumpster_30yd": 650.00,
+        "dumpster_40yd": 750.00,
+        "per_tire": 20.00,
+        "per_mattress": 50.00,
+        "per_refrigerator": 95.00,
+    },
+    "Landscape_Clean_Up": {
+        "per_mulch_bed_rate": 120.00,
+        "per_mulch_bag_rate": 8.50,
+    },
+    "Light_Handyman_Work": {
+        "per_light_fixture_material": 90.00,
+        "per_ceiling_fan_material": 130.00,
+        "per_mirror_material": 50.00,
+        "per_cabinet_door_pull_material": 5.00,
+    },
+}
+
+
 QUOTE_SCHEMA = {
   "type": "OBJECT",
   "required": ["region", "tasks"],

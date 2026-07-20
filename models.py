@@ -8,6 +8,7 @@ class Task:
     details: dict
     service_description: str = ""
     price: float = 0.0
+    material_price: float = 0.0
 
 
 @dataclass

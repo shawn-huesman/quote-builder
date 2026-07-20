@@ -5,9 +5,9 @@ import os
 from typing import Any, Dict
 
 from models import QuoteJob, Space, Room, Task
-from config import DEFAULT_SENDER_EMAIL, PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE
+from config import DEFAULT_SENDER_EMAIL, PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE
 from services import aws_service, monday_service, rendr_service, gemini_service
-from services.pricing_service import PricingEngine
+from services.pricing_service import PricingEngine, MaterialPricingEngine
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -30,7 +30,8 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
         logger.critical(f"VertexAI processing failure: {e}")
         return 502, {"message": "VertexAI Parsing Error"}
 
-    apply_pricing(job)
+    apply_pricing(job, PRICING_CONFIG, PricingEngine, "price")
+    apply_pricing(job, MATERIAL_PRICING_CONFIG, MaterialPricingEngine, "material_price")
     apply_service_language(job)
 
     payload = build_payload(job)
@@ -40,16 +41,16 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     return 200, {"challenge": ""}
 
 
-def apply_pricing(job: QuoteJob):
-    engine = PricingEngine(PRICING_CONFIG)
+def apply_pricing(job: QuoteJob, config, pricing_engine, target_attr):
+    engine = pricing_engine(config)
     for space in job.spaces:
         for task in space.tasks:
-            task.price = engine.price_task(task.task_type, task.details, space)
+            setattr(task, target_attr, engine.price_task(task.task_type, task.details, space))
         for room in space.rooms:
             for task in room.tasks:
-                task.price = engine.price_task(task.task_type, task.details, room)
+                setattr(task, target_attr, engine.price_task(task.task_type, task.details, room))
 
-    logger.info(f"===Pricing Applied===:")
+    logger.info(f"===Pricing Applied ({pricing_engine})===:")
     _prettyprint(job)
 
 
@@ -107,6 +108,7 @@ def _format_task(task):
         "service": f"{task.task_type.replace('_', ' ')}: {task.service_description}",
         "task_key": task.task_type,
         "price": task.price,
+        "material_price": task.material_price,
     }
 
 
