@@ -47,6 +47,8 @@ class PricingEngine:
         total += d.get("patches_small", 0)  * cfg["patch_small_rate"]
         total += d.get("patches_medium", 0) * cfg["patch_medium_rate"]
         total += d.get("patches_large", 0)  * cfg["patch_large_rate"]
+
+        total = max(total, cfg["minimum_painting_price"])
         return total
 
     def _price_exterior_painting(self, d: dict, container) -> float:
