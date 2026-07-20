@@ -45,6 +45,7 @@ CRITICAL RULES:
 - For Carpet_Installation tasks: If carpet tasks are specified, assume carpet tier 1 unless specified otherwise. Additionally, if demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 - For Flooring_Installation tasks: Assume demo is not required by default. If demo is required, then assume that the demo is not ceramic tile unless specified otherwise.
 - For Exterior_Painting tasks: Always apply this task to the largest space (not room)
+- For Cabinet_Painting and Light_Handyman_Work: If the space/room is named main bedroom or master bedroom, assume there is a double-vanity and reflect this inside of the description text.
 """
 
 PRICING_CONFIG = {
