@@ -687,12 +687,10 @@ class QuoteExcelBuilder:
         self,
         job,
         payout_estimator: Optional[Callable[[Any, Any], float]] = None,
-        material_cost_estimator: Optional[Callable[[Any, Any], float]] = None,
         only_priced: bool = True,
     ) -> Workbook:
         records = price_records_from_job(
             job, payout_estimator=payout_estimator,
-            material_cost_estimator=material_cost_estimator,
             only_priced=only_priced,
         )
         return self.build(records, job_meta_from_job(job))
@@ -702,11 +700,10 @@ class QuoteExcelBuilder:
         path: str,
         job,
         payout_estimator: Optional[Callable[[Any, Any], float]] = None,
-        material_cost_estimator: Optional[Callable[[Any, Any], float]] = None,
         only_priced: bool = True,
     ) -> None:
         self.build_from_job(
-            job, payout_estimator, material_cost_estimator, only_priced
+            job, payout_estimator, only_priced
         ).save(path)
 
 
@@ -714,11 +711,9 @@ def price_records_from_job(
     job,
     engine=None,
     payout_estimator: Optional[Callable[[Any, Any], float]] = None,
-    material_cost_estimator: Optional[Callable[[Any, Any], float]] = None,
     only_priced: bool = True,
 ) -> list[PricedTaskRecord]:
     payout_estimator = payout_estimator or (lambda task, container: 0.0)
-    material_cost_estimator = material_cost_estimator or (lambda task, container: 0.0)
 
     def make_record(task, room_name: str, container) -> PricedTaskRecord:
         if engine is not None:
@@ -729,7 +724,7 @@ def price_records_from_job(
             details=task.details,
             price=task.price,
             payout=payout_estimator(task, container),
-            material_cost=material_cost_estimator(task, container),
+            material_cost=task.material_price,
             scope=task.service_description or None,
             wall_area=getattr(container, "wall_area", None),
             ceiling_area=getattr(container, "ceiling_area", None),
