@@ -707,6 +707,10 @@ class QuoteExcelBuilder:
         ).save(path)
 
 
+def get_attr_if_type(container, attr_name: str, task_type: str, allowed_types: set) -> Any:
+    return getattr(container, attr_name, None) if task_type in allowed_types else None
+
+
 def price_records_from_job(
     job,
     engine=None,
@@ -718,6 +722,13 @@ def price_records_from_job(
     def make_record(task, room_name: str, container) -> PricedTaskRecord:
         if engine is not None:
             task.price = engine.price_task(task.task_type, task.details, container)
+
+        wall_area = get_attr_if_type(container, "wall_area", task.task_type, {"Interior_Painting"})
+        ceiling_area = get_attr_if_type(container, "ceiling_area", task.task_type, {"Flooring_Installation",
+                                                                                    "Carpet_Installation"})
+        paintable_sqft = get_attr_if_type(container, "paintable_sqft", task.task_type, {"Interior_Painting"})
+        perimeter = get_attr_if_type(container, "perimeter", task.task_type, {"Interior_Painting"})
+
         return PricedTaskRecord(
             room_name=room_name,
             task_type=task.task_type,
@@ -726,10 +737,10 @@ def price_records_from_job(
             payout=payout_estimator(task, container),
             material_cost=task.material_price,
             scope=task.service_description or None,
-            wall_area=getattr(container, "wall_area", None),
-            ceiling_area=getattr(container, "ceiling_area", None),
-            paintable_sqft=getattr(container, "paintable_sqft", None),
-            perimeter=getattr(container, "perimeter", None),
+            wall_area=wall_area,
+            ceiling_area=ceiling_area,
+            paintable_sqft=paintable_sqft,
+            perimeter=perimeter,
         )
 
     records: list[PricedTaskRecord] = []
