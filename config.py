@@ -222,7 +222,6 @@ MATERIAL_PRICING_CONFIG = {
     },
     "Carpet_Installation": {
         "material_per_sqft": {"tier1": 1.16, "tier2": 1.70, "tier3": 2.35},
-        "labor_per_sqft": {"tier1": 0.30, "tier2": 0.30, "tier3": 0.45},
         "pad_per_sqft": 0.40,
         "tack_strips_per_sqft": 0.15,
         "transition_strips_per_1000_sqft": 3.00,
@@ -234,7 +233,6 @@ MATERIAL_PRICING_CONFIG = {
     },
     "Flooring_Installation": {
         "material_per_sqft": {"LVP": 2.78, "LVT": 3.06},
-        "labor_per_sqft": {"LVP": 1.25, "LVT": 1.25},
         "floor_prep_per_sqft": 0.40,
         "kilz_treatment_per_sqft": 0.27,
         "demo_vinyl_per_sqft": 0.50,
@@ -245,17 +243,17 @@ MATERIAL_PRICING_CONFIG = {
         "transition_strips_per_1000_sqft": 3.00,
     },
     "Home_Clear_Outs": {
-        "per_box_truck_load": 550.00,
-        "dumpster_20yd": 550.00,
-        "dumpster_30yd": 650.00,
-        "dumpster_40yd": 750.00,
-        "per_tire": 20.00,
-        "per_mattress": 50.00,
-        "per_refrigerator": 95.00,
+        "per_box_truck_load": 0,
+        "dumpster_20yd": 0,
+        "dumpster_30yd": 0,
+        "dumpster_40yd": 0,
+        "per_tire": 0,
+        "per_mattress": 0,
+        "per_refrigerator": 0,
     },
     "Landscape_Clean_Up": {
-        "per_mulch_bed_rate": 120.00,
-        "per_mulch_bag_rate": 8.50,
+        "per_mulch_bed_rate": 0,
+        "per_mulch_bag_rate": 0,
     },
     "Light_Handyman_Work": {
         "per_light_fixture_material": 90.00,
@@ -263,6 +261,41 @@ MATERIAL_PRICING_CONFIG = {
         "per_mirror_material": 50.00,
         "per_cabinet_door_pull_material": 5.00,
     },
+}
+
+PAYOUT_PRICING_CONFIG = {
+    "royalty_multiplier": 0.0725,
+    "Interior_Painting": {
+        "target_margin": 0.30
+    },
+    "Exterior_Painting": {
+        "target_margin": 0.30
+    },
+    "Cabinet_Painting": {
+        "target_margin": 0.30
+    },
+    "Carpet_Installation": {
+        "labor_per_sqft": {"tier1": 0.30, "tier2": 0.30, "tier3": 0.45}
+    },
+    "Flooring_Installation": {
+        "labor_per_sqft": {"LVP": 1.25, "LVT": 1.25}
+    },
+    "Carpet_Cleaning": {
+        "per_room_rate": 50.00,
+    },
+    "Landscape_Clean_Up": {
+        "per_mulch_bed_rate": 0,
+        "per_mulch_bag_rate": 0,
+    },
+    "Light_Handyman_Work": {
+        "per_light_fixture_material": 30.00,
+        "per_ceiling_fan_material": 50.00,
+        "per_mirror_material": 30.00,
+        "per_cabinet_door_pull_material": 10.00,
+    },
+    "Window_Washing": {
+        "per_pane_rate": 20.00
+    }
 }
 
 

@@ -9,6 +9,7 @@ class Task:
     service_description: str = ""
     price: float = 0.0
     material_price: float = 0.0
+    payout_price: float = 0.0
 
 
 @dataclass

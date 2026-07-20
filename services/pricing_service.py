@@ -271,10 +271,8 @@ class MaterialPricingEngine:
         sqft = container.ceiling_area
         tier = d.get("carpet_tier", "tier1")
         material_rate = cfg["material_per_sqft"].get(tier, cfg["material_per_sqft"]["tier1"])
-        labor_rate = cfg["labor_per_sqft"].get(tier, cfg["labor_per_sqft"]["tier1"])
 
         total = sqft * material_rate
-        total += sqft * labor_rate
         total += sqft * cfg["pad_per_sqft"]
         total += sqft * cfg["tack_strips_per_sqft"]
         total += (sqft / 1000.0) * cfg["transition_strips_per_1000_sqft"]
@@ -296,10 +294,8 @@ class MaterialPricingEngine:
         sqft = container.ceiling_area
         material = d.get("material", "LVP")
         material_rate = cfg["material_per_sqft"].get(material, cfg["material_per_sqft"]["LVP"])
-        labor_rate = cfg["labor_per_sqft"].get(material, cfg["labor_per_sqft"]["LVP"])
 
         total = sqft * material_rate
-        total += sqft * labor_rate
         total += sqft * cfg["floor_prep_per_sqft"]
         total += (sqft / 1000.0) * cfg["transition_strips_per_1000_sqft"]
         total += d.get("appliances_to_move", 0) * cfg["per_appliance_rate"]
@@ -351,3 +347,90 @@ def _round_gallons(gallons: float) -> float:
     whole = int(gallons)
     frac = gallons - whole
     return float(whole + 1) if frac >= 0.2 else float(whole)
+
+
+class PayoutPricingEngine:
+    def __init__(self, config: dict):
+        self.config = config
+
+    def price_task(self, task_type: str, details: dict, container):
+        method = getattr(self, f"_price_{task_type.lower()}", None)
+        if not method:
+            logger.warning(f"No material pricing rule for task type: {task_type}")
+            return 0
+        return method(details, container)
+
+    def _calculate_paint_price(self, task_name: str, container) -> float:
+        task = next((t for t in container.tasks if t.task_type == task_name), None)
+        if not task:
+            return 0.0
+
+        cfg = self.config[task_name]
+        royalty_mult = self.config["royalty_multiplier"]
+        target_margin = cfg["target_margin"]
+
+        return task.price - (task.price * royalty_mult) - task.material_price - (task.price * target_margin)
+
+    def _price_interior_painting(self, d: dict, container) -> float:
+        return self._calculate_paint_price("Interior_Painting", container)
+
+    def _price_exterior_painting(self, d: dict, container) -> float:
+        return self._calculate_paint_price("Exterior_Painting", container)
+
+    def _price_cabinet_painting(self, d: dict, container) -> float:
+        return self._calculate_paint_price("Cabinet_Painting", container)
+
+    def _price_carpet_installation(self, d: dict, container) -> float:
+        cfg = self.config["Carpet_Installation"]
+        sqft = container.ceiling_area
+        tier = d.get("carpet_tier", "tier1")
+        labor_rate = cfg["labor_per_sqft"].get(tier, cfg["labor_per_sqft"]["tier1"])
+
+        total = sqft * labor_rate
+
+        return total
+
+    def _price_flooring_installation(self, d: dict, container) -> float:
+        cfg = self.config["Flooring_Installation"]
+        sqft = container.ceiling_area
+        material = d.get("material", "LVP")
+        labor_rate = cfg["labor_per_sqft"].get(material, cfg["labor_per_sqft"]["LVP"])
+
+        total = sqft * labor_rate
+
+        return total
+
+    def _price_carpet_cleaning(self, d: dict, container) -> float:
+        cfg = self.config["Carpet_Cleaning"]
+
+        total = d.get("room_count", 0) * cfg["per_room_rate"]
+
+        return total
+
+    def _price_home_clear_outs(self, d: dict, container) -> float:
+        cfg = self.config["Home_Clear_Outs"]
+        return (
+                d.get("box_truck_loads", 0) * cfg["per_box_truck_load"]
+                + d.get("dumpster_20yd_count", 0) * cfg["dumpster_20yd"]
+                + d.get("dumpster_30yd_count", 0) * cfg["dumpster_30yd"]
+                + d.get("dumpster_40yd_count", 0) * cfg["dumpster_40yd"]
+                + d.get("tire_count", 0) * cfg["per_tire"]
+                + d.get("mattress_count", 0) * cfg["per_mattress"]
+                + d.get("refrigerator_count", 0) * cfg["per_refrigerator"]
+        )
+
+    def _price_landscape_clean_up(self, d: dict, container) -> float:
+        cfg = self.config["Landscape_Clean_Up"]
+        return (
+                d.get("num_beds_mulched", 0) * cfg["per_mulch_bed_rate"]
+                + d.get("num_bags_mulch", 0) * cfg["per_mulch_bag_rate"]
+        )
+
+    def _price_light_handyman_work(self, d: dict, container) -> float:
+        cfg = self.config["Light_Handyman_Work"]
+        return (
+                d.get("cabinet_door_pull_amount", 0) * cfg["per_cabinet_door_pull_material"]
+                + d.get("light_fixture_amount", 0) * cfg["per_light_fixture_material"]
+                + d.get("ceiling_fan_amount", 0) * cfg["per_ceiling_fan_material"]
+                + d.get("mirror_amount", 0) * cfg["per_mirror_material"]
+        )

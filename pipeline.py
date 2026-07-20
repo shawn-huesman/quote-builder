@@ -5,9 +5,9 @@ import os
 from typing import Any, Dict
 
 from models import QuoteJob, Space, Room, Task
-from config import DEFAULT_SENDER_EMAIL, PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE
+from config import DEFAULT_SENDER_EMAIL, PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE
 from services import aws_service, monday_service, rendr_service, gemini_service
-from services.pricing_service import PricingEngine, MaterialPricingEngine
+from services.pricing_service import PricingEngine, MaterialPricingEngine, PayoutPricingEngine
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -32,6 +32,7 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
 
     apply_pricing(job, PRICING_CONFIG, PricingEngine, "price")
     apply_pricing(job, MATERIAL_PRICING_CONFIG, MaterialPricingEngine, "material_price")
+    apply_pricing(job, PAYOUT_PRICING_CONFIG, PayoutPricingEngine, "payout_price")
     apply_service_language(job)
 
     payload = build_payload(job)
@@ -109,6 +110,7 @@ def _format_task(task):
         "task_key": task.task_type,
         "price": task.price,
         "material_price": task.material_price,
+        "payout_price": task.payout_price,
     }
 
 
