@@ -54,59 +54,38 @@ def apply_pricing(job: QuoteJob):
 
 
 def apply_service_language(job: QuoteJob):
-    ADDON_MAPPINGS = {
+    addon_mappings = {
         "kilz_required": "priming the subfloors",
-        "furniture_move": "moving the furniture"
+        "demo_required": "demolition and removal of existing flooring",
+        "ceramic_demo_required": "demolition and removal of existing flooring",
+        "furniture_move": "moving the furniture",
     }
 
-    DEMO_KEYS = ["demo_required", "ceramic_demo_required"]
-    DEMO_TEXT = "demolition and removal of existing flooring"
-
-    def format_addons(addons_list: list) -> str:
-        if not addons_list:
-            return ""
-        if len(addons_list) == 1:
-            return addons_list[0]
-        if len(addons_list) == 2:
-            return f"{addons_list[0]} and {addons_list[1]}"
-        return ", ".join(addons_list[:-1]) + f", and {addons_list[-1]}"
-
-    def extract_addons(details: dict) -> list:
-        addons = []
-        if details.get("kilz_required"):
-            addons.append(ADDON_MAPPINGS["kilz_required"])
-        if any(details.get(key) for key in DEMO_KEYS):
-            addons.append(DEMO_TEXT)
-        if details.get("furniture_move"):
-            addons.append(ADDON_MAPPINGS["furniture_move"])
-        return addons
-
     def process_task(task: Task):
-        if task.task_type not in ["Carpet_Installation", "LVP_Installation", "LVT_Installation"]:
-            return
-
         details = task.details or {}
-        addons = extract_addons(details)
+        task_display = None
+        if task.task_type == "Flooring_Installation":
+            task_display = details.get("material")
+        elif task.task_type == "Carpet_Installation":
+            carpet_tier = str.capitalize(details.get("carpet_tier").replace("tier", " tier"))
+            task_display = carpet_tier + " carpet "
 
-        if not addons:
-            return
+        addons = []
+        for key, text in addon_mappings.items():
+            if details.get(key) and text not in addons:
+                addons.append(text)
 
-        if task.task_type == "Carpet_Installation":
-            task_display = "carpet"
-        elif task.task_type == "LVP_Installation":
-            task_display = "LVP"
-        else:
-            task_display = "LVT"
+        if addons and task_display:
+            if len(addons) > 2:
+                addons_text = f"{', '.join(addons[:-1])}, and {addons[-1]}"
+            else:
+                addons_text = " and ".join(addons)
 
-        addons_text = format_addons(addons)
-        addons_sentence = f"\n\nThe {task_display} installation price includes {addons_text}."
-
-        task.service_description += addons_sentence
+            task.service_description += f"\n\nThe {task_display} installation price includes {addons_text}."
 
     for space in job.spaces:
         for task in space.tasks:
             process_task(task)
-
         for room in space.rooms:
             for task in room.tasks:
                 process_task(task)
