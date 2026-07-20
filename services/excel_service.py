@@ -10,6 +10,8 @@ from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
+from config import PRICING_CONFIG
+
 FONT_NAME = "Arial"
 TITLE_FONT = Font(name=FONT_NAME, size=15, bold=True)
 HEADER_FONT = Font(name=FONT_NAME, size=11, bold=True, color="FFFFFF")
@@ -36,6 +38,8 @@ SUMMARY_SECTION_GAP = 2
 TASK_TOTAL_ROW_GAP = 2
 
 MEASUREMENT_COLUMNS = (
+    ("room_area", "Room Area (sqft)", 16),
+    ("room_area_waste", "Room Area (w/Waste) (sqft)", 16),
     ("wall_area", "Wall Area (sqft)", 16),
     ("ceiling_area", "Ceiling Area (sqft)", 16),
     ("paintable_sqft", "Paintable Area (sqft)", 18),
@@ -306,6 +310,8 @@ class PricedTaskRecord:
     payout: float = 0.0
     material_cost: float = 0.0
     scope: Optional[str] = None
+    room_area: Optional[float] = None
+    room_area_waste: Optional[float] = None
     wall_area: Optional[float] = None
     ceiling_area: Optional[float] = None
     paintable_sqft: Optional[float] = None
@@ -723,6 +729,18 @@ def price_records_from_job(
         if engine is not None:
             task.price = engine.price_task(task.task_type, task.details, container)
 
+        waste_multipler = 1
+        if task.task_type == "Flooring_Installation":
+            waste_multipler = PRICING_CONFIG["Flooring_Installation"].get("waste_factor_multiplier")
+        elif task.task_type == "Carpet_Installation":
+            waste_multipler = PRICING_CONFIG["Carpet_Installation"].get("waste_factor_multiplier")
+
+        room_area_waste = None
+        room_area = get_attr_if_type(container, "ceiling_area", task.task_type, {"Flooring_Installation",
+                                                                                    "Carpet_Installation"})
+        if room_area:
+            room_area_waste = room_area * waste_multipler
+
         wall_area = get_attr_if_type(container, "wall_area", task.task_type, {"Interior_Painting"})
         ceiling_area = get_attr_if_type(container, "ceiling_area", task.task_type, {"Flooring_Installation",
                                                                                     "Carpet_Installation"})
@@ -737,6 +755,8 @@ def price_records_from_job(
             payout=payout_estimator(task, container),
             material_cost=task.material_price,
             scope=task.service_description or None,
+            room_area=room_area,
+            room_area_waste=room_area_waste,
             wall_area=wall_area,
             ceiling_area=ceiling_area,
             paintable_sqft=paintable_sqft,
