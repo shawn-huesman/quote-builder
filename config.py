@@ -222,6 +222,7 @@ MATERIAL_PRICING_CONFIG = {
     },
     "Carpet_Installation": {
         "material_per_sqft": {"tier1": 1.16, "tier2": 1.70, "tier3": 2.35},
+        "labor_per_sqft": {"tier1": 0.30, "tier2": 0.30, "tier3": 0.45},
         "pad_per_sqft": 0.40,
         "tack_strips_per_sqft": 0.15,
         "transition_strips_per_1000_sqft": 3.00,
@@ -233,6 +234,7 @@ MATERIAL_PRICING_CONFIG = {
     },
     "Flooring_Installation": {
         "material_per_sqft": {"LVP": 2.78, "LVT": 3.06},
+        "labor_per_sqft": {"LVP": 1.25, "LVT": 1.25},
         "floor_prep_per_sqft": 0.40,
         "kilz_treatment_per_sqft": 0.27,
         "demo_vinyl_per_sqft": 0.50,

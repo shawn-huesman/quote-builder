@@ -271,8 +271,10 @@ class MaterialPricingEngine:
         sqft = container.ceiling_area
         tier = d.get("carpet_tier", "tier1")
         material_rate = cfg["material_per_sqft"].get(tier, cfg["material_per_sqft"]["tier1"])
+        labor_rate = cfg["labor_per_sqft"].get(tier, cfg["labor_per_sqft"]["tier1"])
 
         total = sqft * material_rate
+        total += sqft * labor_rate
         total += sqft * cfg["pad_per_sqft"]
         total += sqft * cfg["tack_strips_per_sqft"]
         total += (sqft / 1000.0) * cfg["transition_strips_per_1000_sqft"]
@@ -294,8 +296,10 @@ class MaterialPricingEngine:
         sqft = container.ceiling_area
         material = d.get("material", "LVP")
         material_rate = cfg["material_per_sqft"].get(material, cfg["material_per_sqft"]["LVP"])
+        labor_rate = cfg["labor_per_sqft"].get(material, cfg["labor_per_sqft"]["LVP"])
 
         total = sqft * material_rate
+        total += sqft * labor_rate
         total += sqft * cfg["floor_prep_per_sqft"]
         total += (sqft / 1000.0) * cfg["transition_strips_per_1000_sqft"]
         total += d.get("appliances_to_move", 0) * cfg["per_appliance_rate"]
