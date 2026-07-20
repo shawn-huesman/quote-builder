@@ -112,6 +112,23 @@ def _format_task(task):
     }
 
 
+def get_task_sort_key(task: dict) -> tuple[int, str]:
+    priority_order = {
+        "Home_Clear_Outs": 1,
+        "Interior_Painting": 2,
+        "Flooring_Installation": 3,
+        "Light_Handyman_Work": 4,
+        "Landscape_Clean_Up": 5,
+        "Pressure_Washing": 6,
+        "Move_Out_Cleaning": 7,
+        "Carpet_Cleaning": 8,
+        "Window_Washing": 9,
+    }
+
+    task_name = task.get("task_key", "")
+    return priority_order.get(task_name, 999), task_name
+
+
 def build_payload(job: QuoteJob) -> dict:
     rooms_out = []
 
@@ -119,10 +136,12 @@ def build_payload(job: QuoteJob) -> dict:
         for room in space.rooms:
             room_tasks = [_format_task(t) for t in room.tasks if t.price > 0]
             if room_tasks:
+                room_tasks.sort(key=get_task_sort_key)
                 rooms_out.append(_room_entry(room.label, room, room_tasks))
 
         space_tasks = [_format_task(t) for t in space.tasks if t.price > 0]
         if space_tasks:
+            space_tasks.sort(key=get_task_sort_key)
             rooms_out.append(_room_entry(space.name, space, space_tasks))
 
     return {
