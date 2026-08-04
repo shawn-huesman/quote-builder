@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional
@@ -699,6 +700,18 @@ class QuoteExcelBuilder:
             only_priced=only_priced,
         )
         return self.build(records, job_meta_from_job(job))
+
+    def build_to_buffer(
+            self,
+            job,
+            only_priced: bool = True,
+    ) -> io.BytesIO:
+        wb = self.build_from_job(job, only_priced=only_priced)
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer
 
     def save_from_job(
         self,

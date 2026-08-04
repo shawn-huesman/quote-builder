@@ -5,9 +5,11 @@ import os
 from typing import Any, Dict
 
 from models import QuoteJob, Space, Room, Task
-from config import DEFAULT_SENDER_EMAIL, PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE
-from services import aws_service, monday_service, rendr_service, gemini_service
+from config import (DEFAULT_SENDER_EMAIL, EXCEL_FOLDER_ID, EXCEL_DELEGATE_EMAIL,
+                    PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE)
+from services import aws_service, monday_service, rendr_service, gemini_service, excel_email_service
 from services.pricing_service import PricingEngine, MaterialPricingEngine, PayoutPricingEngine
+from services.excel_service import QuoteExcelBuilder
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -34,6 +36,12 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     apply_pricing(job, MATERIAL_PRICING_CONFIG, MaterialPricingEngine, "material_price")
     apply_pricing(job, PAYOUT_PRICING_CONFIG, PayoutPricingEngine, "payout_price")
     apply_service_language(job)
+
+    SPREADSHEET_TITLE = job.address
+    builder = QuoteExcelBuilder()
+    excel_buffer = builder.build_to_buffer(job)
+    excel_email_service.upload_excel_buffer_to_google_drive(excel_buffer, config["excel_key"], EXCEL_DELEGATE_EMAIL,
+                                                            EXCEL_FOLDER_ID, SPREADSHEET_TITLE)
 
     payload = build_payload(job)
     logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
@@ -296,6 +304,7 @@ def _fetch_config(board_id: str) -> dict:
 
     return {
         "vertex_key": aws_service.get_secret("vertex_key"),
+        "excel_key": aws_service.get_secret("excel_key"),
         "prompt_text_base": PROMPT,
         "rendr_token": rendr_service.get_access_token(aws_creds.get("client_id"), aws_creds.get("secret"))
     }
