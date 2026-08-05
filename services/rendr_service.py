@@ -145,7 +145,12 @@ def find_spaces(access_token: str, space_name: str, page_size: int) -> Optional[
                     space_ids.append(s_id)
                     s_res = requests.get(f"{API_BASE_URL}/spaces/json/{s_id}", headers=headers)
                     if s_res.ok:
-                        space_details.append(s_res.json().get("spaces"))
+                        space_json = s_res.json().get("spaces")[0]
+
+                        if "notes" not in space_json or space_json["notes"] == "" or space_json["notes"] == " ":
+                            space_json["notes"] = space.get("notes")
+
+                        space_details.append(space_json)
                     else:
                         logger.warning(f"Could not load JSON schema metrics for space ID: {s_id}")
 
