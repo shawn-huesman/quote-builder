@@ -92,19 +92,20 @@ def summarize_spaces_with_rooms(data: Any) -> List[Dict[str, Any]]:
             if "title" in current and ("squareFootage" in current or "wallSurfaceArea" in current):
 
                 nested_rooms = _extract_rooms_for_space(current)
-                takeoff = current.get("spaceTakeoff")
+                if "spaceTakeoff" in current:
+                    takeoff = current.get("spaceTakeoff")
 
-                results.append({
-                    "space_name": current.get("title"),
-                    "paintable_sqft": takeoff.get("totalPaintableSurfaceAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                    "ceiling_area": takeoff.get("ceilingAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                    "perimeter": takeoff.get("perimeterInMeters", 0) * METERS_TO_FEET,
-                    "wall_area": takeoff.get("wallsAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                    "doors": current.get("numberOfDoors", 0),
-                    "windows": current.get("numberOfWindows", 0),
-                    "notes": current.get("notes") or "",
-                    "rooms": nested_rooms
-                })
+                    results.append({
+                        "space_name": current.get("title"),
+                        "paintable_sqft": takeoff.get("totalPaintableSurfaceAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
+                        "ceiling_area": takeoff.get("ceilingAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
+                        "perimeter": takeoff.get("perimeterInMeters", 0) * METERS_TO_FEET,
+                        "wall_area": takeoff.get("wallsAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
+                        "doors": current.get("numberOfDoors", 0),
+                        "windows": current.get("numberOfWindows", 0),
+                        "notes": current.get("notes") or "",
+                        "rooms": nested_rooms
+                    })
             else:
                 stack.extend(current.values())
 
