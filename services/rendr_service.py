@@ -42,7 +42,6 @@ def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
     METERS_TO_FEET = 3.28084
 
     if isinstance(data, dict):
-        # Identify a Room leaf node
         if "label" in data and ("area" in data or "perimeter" in data or "roomTakeoff" in data):
             label = data.get("label") or ""
             normalized_label = _normalize_key(label)
@@ -50,11 +49,12 @@ def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
             if label and normalized_label != "allrooms":
                 takeoff = data.get("roomTakeoff") or {}
 
-                paintable_sqft, ceiling_area, perimeter, wall_area, doors, windows = [
-                    data.get(k) or takeoff.get(k)
-                    for k in ["totalPaintableSurfaceAreaInSqMeters", "ceilingAreaInSqMeters", "perimeterInMeters",
-                              "wallsAreaInSqMeters", "numberOfDoors", "numberOfWindows"]
-                ]
+                paintable_sqft = data.get("totalPaintableSurfaceAreaInSqMeters") or takeoff.get("totalPaintableSurfaceAreaInSqMeters") or 0
+                ceiling_area = data.get("ceilingAreaInSqMeters") or takeoff.get("ceilingAreaInSqMeters") or 0
+                perimeter = data.get("perimeterInMeters") or takeoff.get("perimeterInMeters") or 0
+                wall_area = data.get("wallsAreaInSqMeters") or takeoff.get("wallsAreaInSqMeters") or 0
+                doors = data.get("numberOfDoors") or takeoff.get("numberOfDoors") or 0
+                windows = data.get("numberOfWindows") or takeoff.get("numberOfWindows") or 0
 
                 rooms.append({
                     "label": label,
@@ -64,8 +64,9 @@ def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
                     "wall_area": float(wall_area or 0) * SQUARE_METERS_TO_SQUARE_FEET,
                     "doors": int(doors or 0),
                     "windows": int(windows or 0),
-                    "notes": data.get("notes") or ""
+                    "notes": data.get("notes") or takeoff.get("notes") or ""
                 })
+
             return rooms
 
         for value in data.values():
@@ -89,23 +90,50 @@ def summarize_spaces_with_rooms(data: Any) -> List[Dict[str, Any]]:
         current = stack.pop()
 
         if isinstance(current, dict):
-            if "title" in current and ("squareFootage" in current or "wallSurfaceArea" in current):
+            if ("title" in current or "label" in current) and (
+                    "squareFootage" in current or "wallSurfaceArea" in current or "totalPaintableSurfaceAreaInSqMeters" in current or "spaceTakeoff" in current):
 
                 nested_rooms = _extract_rooms_for_space(current)
-                if "spaceTakeoff" in current:
-                    takeoff = current.get("spaceTakeoff")
+                takeoff = current.get("spaceTakeoff") or {}
 
-                    results.append({
-                        "space_name": current.get("title"),
-                        "paintable_sqft": takeoff.get("totalPaintableSurfaceAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                        "ceiling_area": takeoff.get("ceilingAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                        "perimeter": takeoff.get("perimeterInMeters", 0) * METERS_TO_FEET,
-                        "wall_area": takeoff.get("wallsAreaInSqMeters", 0) * SQUARE_METERS_TO_SQUARE_FEET,
-                        "doors": current.get("numberOfDoors", 0),
-                        "windows": current.get("numberOfWindows", 0),
-                        "notes": current.get("notes") or "",
-                        "rooms": nested_rooms
-                    })
+                paintable_sqft = (
+                        current.get("totalPaintableSurfaceAreaInSqMeters") or
+                        takeoff.get("totalPaintableSurfaceAreaInSqMeters") or
+                        0
+                )
+
+                ceiling_area = (
+                        current.get("ceilingAreaInSqMeters") or
+                        takeoff.get("ceilingAreaInSqMeters") or
+                        0
+                )
+
+                perimeter = (
+                        current.get("perimeterInMeters") or
+                        takeoff.get("perimeterInMeters") or
+                        0
+                )
+
+                wall_area = (
+                        current.get("wallsAreaInSqMeters") or
+                        takeoff.get("wallsAreaInSqMeters") or
+                        0
+                )
+
+                doors = current.get("numberOfDoors") or takeoff.get("numberOfDoors") or 0
+                windows = current.get("numberOfWindows") or takeoff.get("numberOfWindows") or 0
+
+                results.append({
+                    "space_name": current.get("title") or current.get("label"),
+                    "paintable_sqft": float(paintable_sqft) * SQUARE_METERS_TO_SQUARE_FEET,
+                    "ceiling_area": float(ceiling_area) * SQUARE_METERS_TO_SQUARE_FEET,
+                    "perimeter": float(perimeter) * METERS_TO_FEET,
+                    "wall_area": float(wall_area) * SQUARE_METERS_TO_SQUARE_FEET,
+                    "doors": int(doors),
+                    "windows": int(windows),
+                    "notes": current.get("notes") or takeoff.get("notes") or "",
+                    "rooms": nested_rooms
+                })
             else:
                 stack.extend(current.values())
 
@@ -122,6 +150,13 @@ def summarize_spaces_with_rooms(data: Any) -> List[Dict[str, Any]]:
 
     logger.info(f"--- FINAL HIERARCHICAL SUMMARY ---: {json.dumps(unique_results)}")
     return unique_results
+
+
+def _process_space_data(data: dict, space: dict, space_details: list):
+    if not data.get("notes") or not str(data["notes"]).strip():
+        data["notes"] = space.get("notes")
+
+    space_details.append(data)
 
 
 def find_spaces(access_token: str, space_name: str, page_size: int) -> Optional[Dict[str, Any]]:
@@ -144,17 +179,22 @@ def find_spaces(access_token: str, space_name: str, page_size: int) -> Optional[
                 for space in project.get("spaces", []):
                     s_id = space.get("id")
                     space_ids.append(s_id)
-                    s_res = requests.get(f"{API_BASE_URL}/spaces/json/{s_id}", headers=headers)
-                    if s_res.ok:
-                        space_json = s_res.json().get("spaces")[0]
+                    space_json_res = requests.get(f"{API_BASE_URL}/spaces/json/{s_id}", headers=headers)
 
-                        if "notes" not in space_json or space_json["notes"] == "" or space_json["notes"] == " ":
-                            space_json["notes"] = space.get("notes")
+                    space_res = requests.get(f"{API_BASE_URL}/spaces/{s_id}", headers=headers)
+                    space_uuid = space_res.json().get("uuid")
+                    flex = requests.get(f"{API_BASE_URL}/spaces/flex/file-versions/{space_uuid}/latest", headers=headers)
+                    flex_uuid = flex.json().get("uuid")
+                    flex_takeoff_res = requests.get(f"{API_BASE_URL}/spaces/flex/export/takeoff/{flex_uuid}", headers=headers)
 
-                        space_details.append(space_json)
+                    if flex_takeoff_res.ok:
+                        flex_takeoff = flex_takeoff_res.json()
+                        _process_space_data(flex_takeoff, space, space_details)
+                    elif space_json_res.ok:
+                        space_json = space_json_res.json().get("spaces")[0]
+                        _process_space_data(space_json, space, space_details)
                     else:
                         logger.warning(f"Could not load JSON schema metrics for space ID: {s_id}")
-
                 return {
                     "project_id": project.get("id"),
                     "space_ids": space_ids,
