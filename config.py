@@ -269,13 +269,13 @@ MATERIAL_PRICING_CONFIG = {
 PAYOUT_PRICING_CONFIG = {
     "royalty_multiplier": 0.0725,
     "Interior_Painting": {
-        "target_margin": 0.30
+        "target_margin": 0.40
     },
     "Exterior_Painting": {
-        "target_margin": 0.30
+        "target_margin": 0.40
     },
     "Cabinet_Painting": {
-        "target_margin": 0.30
+        "target_margin": 0.40
     },
     "Carpet_Installation": {
         "labor_per_sqft": {"tier1": 0.30, "tier2": 0.30, "tier3": 0.45}
