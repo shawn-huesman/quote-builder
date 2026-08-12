@@ -50,6 +50,7 @@ CRITICAL RULES:
 - For Exterior_Painting tasks: Always apply this task to the largest space (not room)
 - For Cabinet_Painting and Light_Handyman_Work: If the space/room is named main bedroom or master bedroom, assume there is a double-vanity and reflect this inside of the description text.
 - For Interior_Painting: In the service description, convert "trim" to "baseboards, casings, interior doors"
+- The following tasks need to always be added to the "Home" space and not added to any other space: Move_Out_Cleaning, Exterior_Painting, Landscape_Clean_Up, Home_Clear_Out, Pressure_Washing
 """
 
 PRICING_CONFIG = {

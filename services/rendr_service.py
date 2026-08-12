@@ -148,6 +148,18 @@ def summarize_spaces_with_rooms(data: Any) -> List[Dict[str, Any]]:
             unique_results.append(r)
             seen.add(uid)
 
+    unique_results.append({
+        "space_name": "Home",
+        "paintable_sqft": sum(d.get("paintable_sqft", 0) for d in unique_results),
+        "ceiling_area": sum(d.get("ceiling_area", 0) for d in unique_results),
+        "perimeter": sum(d.get("perimeter", 0) for d in unique_results),
+        "wall_area": sum(d.get("wall_area", 0) for d in unique_results),
+        "doors": sum(d.get("doors", 0) for d in unique_results),
+        "windows": sum(d.get("windows", 0) for d in unique_results),
+        "notes": "",
+        "rooms": []
+    })
+
     logger.info(f"--- FINAL HIERARCHICAL SUMMARY ---: {json.dumps(unique_results)}")
     return unique_results
 
