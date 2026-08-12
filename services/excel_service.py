@@ -22,11 +22,11 @@ TOTAL_FONT = Font(name=FONT_NAME, size=11, bold=True)
 
 LOW_MARGIN_FONT = Font(color="9C0006")
 LOW_MARGIN_FILL = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-LOW_MARGIN_THRESHOLD = 0.30
+LOW_MARGIN_THRESHOLD = 0.20
 
 MED_MARGIN_FONT = Font(color="9C6500")
 MED_MARGIN_FILL = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
-MED_MARGIN_THRESHOLD = 0.40
+MED_MARGIN_THRESHOLD = 0.30
 
 CURRENCY_FMT = '"$"#,##0.00'
 PERCENT_FMT = "0.0%"
