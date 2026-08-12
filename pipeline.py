@@ -17,17 +17,23 @@ logger.setLevel(logging.INFO)
 
 def run_quote_pipeline(event_data: Dict[str, Any]):
     job = build_job(event_data)
+    board_id = job.monday_board_id
     logger.info(f"Starting pipeline -> Address: '{job.address}'")
 
-    config = _fetch_config(job.monday_board_id)
-    if not config["rendr_token"]:
+    config = _fetch_config(board_id)
+    monday_api_key = config["monday_api_key"]
+    excel_key = config["excel_key"]
+    rendr_token = config["rendr_token"]
+    vertex_key = config["vertex_key"]
+    prompt_text_base = config["prompt_text_base"]
+    if not rendr_token:
         return 500, {"message": "Rendr Access Token collection failed"}
 
-    if not populate_spaces(job, config["rendr_token"]):
+    if not populate_spaces(job, rendr_token):
         return 200, {"message": "No matching Rendr project found", "pulseId": job.monday_item_id}
 
     try:
-        populate_tasks(job, config["vertex_key"], config["prompt_text_base"])
+        populate_tasks(job, vertex_key, prompt_text_base)
     except Exception as e:
         logger.critical(f"VertexAI processing failure: {e}")
         return 502, {"message": "VertexAI Parsing Error"}
@@ -37,11 +43,17 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     apply_pricing(job, PAYOUT_PRICING_CONFIG, PayoutPricingEngine, "payout_price")
     apply_service_language(job)
 
-    SPREADSHEET_TITLE = job.address
+    pipeline_workspaces = monday_service.get_pipeline_workspaces(monday_api_key)
+    excel_email_service.sync_workspace_folders(excel_key, EXCEL_DELEGATE_EMAIL, EXCEL_FOLDER_ID, pipeline_workspaces)
+
+    workspace_id = monday_service.get_workspace_id_from_board(board_id, monday_api_key)
+    folder_id = excel_email_service.get_folder_id_by_workspace_id(excel_key, EXCEL_DELEGATE_EMAIL, EXCEL_FOLDER_ID, workspace_id)
+
+    spreadsheet_title = job.address
     builder = QuoteExcelBuilder()
     excel_buffer = builder.build_to_buffer(job)
-    excel_email_service.upload_excel_buffer_to_google_drive(excel_buffer, config["excel_key"], EXCEL_DELEGATE_EMAIL,
-                                                            EXCEL_FOLDER_ID, SPREADSHEET_TITLE)
+    excel_email_service.upload_excel_buffer_to_google_drive(excel_buffer, excel_key, EXCEL_DELEGATE_EMAIL,
+                                                            folder_id, spreadsheet_title)
 
     payload = build_payload(job)
     logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
@@ -303,6 +315,7 @@ def _fetch_config(board_id: str) -> dict:
     aws_creds = aws_service.get_secret(market)
 
     return {
+        "monday_api_key": monday_key,
         "vertex_key": aws_service.get_secret("vertex_key"),
         "excel_key": aws_service.get_secret("excel_key"),
         "prompt_text_base": PROMPT,

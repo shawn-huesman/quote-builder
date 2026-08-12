@@ -10,7 +10,7 @@ DEFAULT_SENDER_EMAIL = "evan.lewis@home-stretch.com"
 AWS_DEFAULT_REGION = "us-east-2"
 
 EXCEL_DELEGATE_EMAIL = "quote.summary@home-stretch.com"
-EXCEL_FOLDER_ID = "0AFluM5fEcJ_gUk9PVA"
+EXCEL_FOLDER_ID = "0ANss-ANDIfoVUk9PVA"
 
 HOMESTRETCH_COOKIE = "connect.sid=s%3A6aKhqLhZbVlBOa-t-ckbGP0XEfVZA_w3.vQROn05nLE6rHemhCwz%2BjtqyTEQqis7YFeLSPv1RnMc"
 
