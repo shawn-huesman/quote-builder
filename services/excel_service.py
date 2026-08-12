@@ -19,13 +19,18 @@ HEADER_FONT = Font(name=FONT_NAME, size=11, bold=True, color="FFFFFF")
 HEADER_FILL = PatternFill("solid", fgColor="404040")
 BODY_FONT = Font(name=FONT_NAME, size=11)
 TOTAL_FONT = Font(name=FONT_NAME, size=11, bold=True)
+
 LOW_MARGIN_FONT = Font(color="9C0006")
 LOW_MARGIN_FILL = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+LOW_MARGIN_THRESHOLD = 0.30
+
+MED_MARGIN_FONT = Font(color="9C6500")
+MED_MARGIN_FILL = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+MED_MARGIN_THRESHOLD = 0.40
 
 CURRENCY_FMT = '"$"#,##0.00'
 PERCENT_FMT = "0.0%"
 MEASUREMENT_FMT = "#,##0.0"
-LOW_MARGIN_THRESHOLD = 0.20
 
 DEFAULT_ROYALTY_RATE = 0.075
 
@@ -369,19 +374,31 @@ class _BaseSheetWriter:
         last_col_letter = get_column_letter(num_cols)
         ws.auto_filter.ref = f"A{header_row}:{last_col_letter}{last_data_row}"
 
-    def _flag_low_margins(
-        self, ws: Worksheet, first_row: int, last_row: int, col: int
+
+    def _apply_margin_formatting(
+            self, ws: Worksheet, first_row: int, last_row: int, col: int
     ) -> None:
         if last_row < first_row:
             return
         letter = get_column_letter(col)
-        rule = CellIsRule(
+        cell_range = f"{letter}{first_row}:{letter}{last_row}"
+
+        low_rule = CellIsRule(
             operator="lessThan",
             formula=[str(LOW_MARGIN_THRESHOLD)],
             font=LOW_MARGIN_FONT,
             fill=LOW_MARGIN_FILL,
         )
-        ws.conditional_formatting.add(f"{letter}{first_row}:{letter}{last_row}", rule)
+
+        med_rule = CellIsRule(
+            operator="between",
+            formula=[str(LOW_MARGIN_THRESHOLD), str(MED_MARGIN_THRESHOLD)],
+            font=MED_MARGIN_FONT,
+            fill=MED_MARGIN_FILL,
+        )
+
+        ws.conditional_formatting.add(cell_range, low_rule)
+        ws.conditional_formatting.add(cell_range, med_rule)
 
     def _write_measurement_columns(
         self, ws: Worksheet, row: int, start_col: int, rec: PricedTaskRecord
@@ -460,7 +477,7 @@ class SummarySheetWriter(_BaseSheetWriter):
         table = self._write_line_item_table(ws, r, records)
         self._autofit_and_filter(ws, table.table_start, table.last_data_row, table.num_headers)
         margin_col = table.price_start_col + MARGIN_OFFSET
-        self._flag_low_margins(ws, table.first_data_row, table.last_data_row, col=margin_col)
+        self._apply_margin_formatting(ws, table.first_data_row, table.last_data_row, col=margin_col)
 
         r = table.last_data_row + 1 + SUMMARY_SECTION_GAP
 
@@ -587,7 +604,7 @@ class TaskSheetWriter(_BaseSheetWriter):
                 table.first_data_row, table.last_data_row, table.price_col,
             )
 
-        self._flag_low_margins(ws, table.first_data_row, table.last_data_row, col=table.price_col + MARGIN_OFFSET)
+        self._apply_margin_formatting(ws, table.first_data_row, table.last_data_row, col=table.price_col + MARGIN_OFFSET)
         self._autofit_and_filter(ws, table.header_row, table.last_data_row, table.num_headers)
 
         self._set_column_widths(ws, spec)
