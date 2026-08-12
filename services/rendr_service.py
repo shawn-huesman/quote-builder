@@ -33,28 +33,53 @@ def _normalize_key(s: str) -> str:
 
 
 def _extract_rooms_for_space(data: Any) -> List[Dict[str, Any]]:
-    """
-    Recursively scans deep down into a specific Space's sub-tree
-    to harvest its underlying nested Rooms.
-    """
     rooms = []
     SQUARE_METERS_TO_SQUARE_FEET = 10.76398
     METERS_TO_FEET = 3.28084
 
     if isinstance(data, dict):
-        if "label" in data and ("area" in data or "perimeter" in data or "roomTakeoff" in data):
+        if "rooms" in data and isinstance(data["rooms"], list) and data["rooms"]:
+            for room in data["rooms"]:
+                rooms.extend(_extract_rooms_for_space(room))
+            return rooms
+
+        if "label" in data:
             label = data.get("label") or ""
             normalized_label = _normalize_key(label)
 
             if label and normalized_label != "allrooms":
                 takeoff = data.get("roomTakeoff") or {}
 
-                paintable_sqft = data.get("totalPaintableSurfaceAreaInSqMeters") or takeoff.get("totalPaintableSurfaceAreaInSqMeters") or 0
-                ceiling_area = data.get("ceilingAreaInSqMeters") or takeoff.get("ceilingAreaInSqMeters") or 0
-                perimeter = data.get("perimeterInMeters") or takeoff.get("perimeterInMeters") or 0
-                wall_area = data.get("wallsAreaInSqMeters") or takeoff.get("wallsAreaInSqMeters") or 0
-                doors = data.get("numberOfDoors") or takeoff.get("numberOfDoors") or 0
-                windows = data.get("numberOfWindows") or takeoff.get("numberOfWindows") or 0
+                paintable_sqft = (
+                    data.get("totalPaintableSurfaceAreaInSqMeters")
+                    if data.get("totalPaintableSurfaceAreaInSqMeters") is not None
+                    else takeoff.get("totalPaintableSurfaceAreaInSqMeters", 0)
+                )
+                ceiling_area = (
+                    data.get("ceilingAreaInSqMeters")
+                    if data.get("ceilingAreaInSqMeters") is not None
+                    else takeoff.get("ceilingAreaInSqMeters", 0)
+                )
+                perimeter = (
+                    data.get("perimeterInMeters")
+                    if data.get("perimeterInMeters") is not None
+                    else takeoff.get("perimeterInMeters", 0)
+                )
+                wall_area = (
+                    data.get("wallsAreaInSqMeters")
+                    if data.get("wallsAreaInSqMeters") is not None
+                    else takeoff.get("wallsAreaInSqMeters", 0)
+                )
+                doors = (
+                    data.get("numberOfDoors")
+                    if data.get("numberOfDoors") is not None
+                    else takeoff.get("numberOfDoors", 0)
+                )
+                windows = (
+                    data.get("numberOfWindows")
+                    if data.get("numberOfWindows") is not None
+                    else takeoff.get("numberOfWindows", 0)
+                )
 
                 rooms.append({
                     "label": label,
