@@ -371,6 +371,17 @@ class PayoutPricingEngine:
 
         return task.price - (task.price * royalty_mult) - task.material_price - (task.price * target_margin)
 
+    def _calculate_flooring_price(self, task_name: str, container) -> float:
+        task = next((t for t in container.tasks if t.task_type == task_name), None)
+        if not task:
+            return 0.0
+
+        cfg = self.config[task_name]
+        royalty_mult = self.config["royalty_multiplier"]
+        target_margin = cfg["target_margin"]
+
+        return task.price - (task.price * royalty_mult) - task.material_price - (task.price * target_margin)
+
     def _price_interior_painting(self, d: dict, container) -> float:
         return self._calculate_paint_price("Interior_Painting", container)
 
@@ -381,24 +392,10 @@ class PayoutPricingEngine:
         return self._calculate_paint_price("Cabinet_Painting", container)
 
     def _price_carpet_installation(self, d: dict, container) -> float:
-        cfg = self.config["Carpet_Installation"]
-        sqft = container.ceiling_area
-        tier = d.get("carpet_tier", "tier1")
-        labor_rate = cfg["labor_per_sqft"].get(tier, cfg["labor_per_sqft"]["tier1"])
-
-        total = sqft * labor_rate
-
-        return total
+        return self._calculate_flooring_price("Carpet_Installation", container)
 
     def _price_flooring_installation(self, d: dict, container) -> float:
-        cfg = self.config["Flooring_Installation"]
-        sqft = container.ceiling_area
-        material = d.get("material", "LVP")
-        labor_rate = cfg["labor_per_sqft"].get(material, cfg["labor_per_sqft"]["LVP"])
-
-        total = sqft * labor_rate
-
-        return total
+        return self._calculate_flooring_price("Flooring_Installation", container)
 
     def _price_carpet_cleaning(self, d: dict, container) -> float:
         cfg = self.config["Carpet_Cleaning"]
