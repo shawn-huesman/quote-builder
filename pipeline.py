@@ -55,6 +55,15 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     excel_email_service.upload_excel_buffer_to_google_drive(excel_buffer, excel_key, EXCEL_DELEGATE_EMAIL,
                                                             folder_id, spreadsheet_title)
 
+    excel_email_service.share_folder_via_email(
+        excel_key=excel_key,
+        delegate_user=EXCEL_DELEGATE_EMAIL,
+        folder_id=folder_id,
+        email_address="shawn.huesman@home-stretch.com",
+        role="writer",
+        custom_message="You recently created a HOMEstretch quote. Here is access to your excel workspace subfolder."
+    )
+
     payload = build_payload(job)
     logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
 

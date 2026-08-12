@@ -1,6 +1,7 @@
 import io
 import re
 
+import requests
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -10,6 +11,51 @@ from typing import Any, Dict
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+def share_folder_via_email(
+        excel_key: Dict[str, Any],
+        delegate_user: str,
+        folder_id: str,
+        email_address: str,
+        role: str = "writer",
+        custom_message: str = None
+) -> bool:
+    try:
+        scopes = ['https://www.googleapis.com/auth/drive']
+
+        credentials = service_account.Credentials.from_service_account_info(
+            excel_key, scopes=scopes
+        )
+        credentials = credentials.with_subject(delegate_user)
+
+        drive_service = build('drive', 'v3', credentials=credentials)
+
+        permission_metadata = {
+            'type': 'user',
+            'role': role,
+            'emailAddress': email_address
+        }
+
+        request = drive_service.permissions().create(
+            fileId=folder_id,
+            body=permission_metadata,
+            sendNotificationEmail=True,
+            supportsAllDrives=True,
+            fields='id'
+        )
+
+        if custom_message:
+            request.uri += f"&emailMessage={requests.utils.quote(custom_message)}"
+
+        permission = request.execute()
+
+        print(f"Successfully shared folder {folder_id} with {email_address}.")
+        return True
+
+    except HttpError as error:
+        print(f"An API error occurred while sharing: {error}")
+        return False
 
 
 def upload_excel_buffer_to_google_drive(
