@@ -279,10 +279,10 @@ PAYOUT_PRICING_CONFIG = {
         "target_margin": 0.40
     },
     "Carpet_Installation": {
-        "labor_per_sqft": {"tier1": 0.30, "tier2": 0.30, "tier3": 0.45}
+        "target_margin": 0.40
     },
     "Flooring_Installation": {
-        "labor_per_sqft": {"LVP": 1.25, "LVT": 1.25}
+        "target_margin": 0.40
     },
     "Carpet_Cleaning": {
         "per_room_rate": 50.00,
