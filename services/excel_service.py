@@ -60,13 +60,13 @@ ALL_MEASUREMENTS = tuple(
     key for key, _, _ in MEASUREMENT_COLUMNS
 )
 
-PRICE_OFFSET, PAYOUT_OFFSET, MATERIAL_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET, MARGIN_OFFSET = range(6)
+PRICE_OFFSET, MATERIALS_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET, MARGIN_OFFSET = range(5)
 PRICE_COLUMN_HEADERS = (
-    "HS Price", "Payout", "Material Cost", "Royalty", "Gross Profit", "Gross Margin %"
+    "HS Price", "Materials", "Royalty", "Gross Profit", "Gross Margin %"
 )
 NUM_PRICE_COLUMNS = len(PRICE_COLUMN_HEADERS)
 SUMMABLE_PRICE_OFFSETS = (
-    PRICE_OFFSET, PAYOUT_OFFSET, MATERIAL_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET,
+    PRICE_OFFSET, MATERIALS_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET,
 )
 
 
@@ -91,12 +91,12 @@ class FormulaFactory:
 
     @staticmethod
     def gross_profit(
-        price_cell: str, payout_cell: str, material_cell: str, royalty_cell: str,
-        include_material: bool,
+            price_cell: str, materials_cell: str, royalty_cell: str,
+            include_material: bool,
     ) -> str:
         if include_material:
-            return f"={price_cell}-{payout_cell}-{material_cell}-{royalty_cell}"
-        return f"={price_cell}-{payout_cell}-{royalty_cell}"
+            return f"={price_cell}-{materials_cell}-{royalty_cell}"
+        return f"={price_cell}-{royalty_cell}"
 
     @staticmethod
     def margin(gross_profit_cell: str, price_cell: str) -> str:
@@ -120,12 +120,8 @@ class PriceColumnLayout:
         return self.start_col + PRICE_OFFSET
 
     @property
-    def payout(self) -> int:
-        return self.start_col + PAYOUT_OFFSET
-
-    @property
-    def material(self) -> int:
-        return self.start_col + MATERIAL_OFFSET
+    def materials(self) -> int:
+        return self.start_col + MATERIALS_OFFSET
 
     @property
     def royalty(self) -> int:
@@ -321,6 +317,10 @@ class PricedTaskRecord:
     paintable_sqft: Optional[float] = None
     perimeter: Optional[float] = None
 
+    @property
+    def materials(self) -> float:
+        return self.payout + self.material_cost
+
     def resolved_scope(self) -> str:
         if self.scope:
             return self.scope
@@ -417,8 +417,7 @@ class _BaseSheetWriter:
     ) -> None:
         layout = PriceColumnLayout(start_col)
         price_ref = layout.cell_ref(layout.price, row)
-        payout_ref = layout.cell_ref(layout.payout, row)
-        material_ref = layout.cell_ref(layout.material, row)
+        materials_ref = layout.cell_ref(layout.materials, row)
         royalty_ref = layout.cell_ref(layout.royalty, row)
         gross_profit_ref = layout.cell_ref(layout.gross_profit, row)
 
@@ -426,11 +425,7 @@ class _BaseSheetWriter:
         p.number_format = CURRENCY_FMT
         p.font = BODY_FONT
 
-        pay = ws.cell(row=row, column=layout.payout, value=rec.payout)
-        pay.number_format = CURRENCY_FMT
-        pay.font = BODY_FONT
-
-        mat = ws.cell(row=row, column=layout.material, value=rec.material_cost)
+        mat = ws.cell(row=row, column=layout.materials, value=rec.materials)
         mat.number_format = CURRENCY_FMT
         mat.font = BODY_FONT
 
@@ -444,7 +439,7 @@ class _BaseSheetWriter:
         gp = ws.cell(
             row=row, column=layout.gross_profit,
             value=FormulaFactory.gross_profit(
-                price_ref, payout_ref, material_ref, royalty_ref,
+                price_ref, materials_ref, royalty_ref,
                 spec.include_material_in_profit,
             ),
         )
