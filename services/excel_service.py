@@ -47,7 +47,6 @@ MEASUREMENT_COLUMNS = (
     ("room_area", "Room Area (sqft)", 16),
     ("room_area_waste", "Room Area (w/Waste) (sqft)", 16),
     ("wall_area", "Wall Area (sqft)", 16),
-    ("ceiling_area", "Ceiling Area (sqft)", 16),
     ("paintable_sqft", "Paintable Area (sqft)", 18),
     ("perimeter", "Perimeter (ln ft)", 16),
 )
@@ -319,7 +318,6 @@ class PricedTaskRecord:
     room_area: Optional[float] = None
     room_area_waste: Optional[float] = None
     wall_area: Optional[float] = None
-    ceiling_area: Optional[float] = None
     paintable_sqft: Optional[float] = None
     perimeter: Optional[float] = None
 
@@ -768,8 +766,6 @@ def price_records_from_job(
             room_area_waste = room_area * waste_multipler
 
         wall_area = get_attr_if_type(container, "wall_area", task.task_type, {"Interior_Painting"})
-        ceiling_area = get_attr_if_type(container, "ceiling_area", task.task_type, {"Flooring_Installation",
-                                                                                    "Carpet_Installation"})
         paintable_sqft = get_attr_if_type(container, "paintable_sqft", task.task_type, {"Interior_Painting"})
         perimeter = get_attr_if_type(container, "perimeter", task.task_type, {"Interior_Painting"})
 
@@ -784,7 +780,6 @@ def price_records_from_job(
             room_area=room_area,
             room_area_waste=room_area_waste,
             wall_area=wall_area,
-            ceiling_area=ceiling_area,
             paintable_sqft=paintable_sqft,
             perimeter=perimeter,
         )
