@@ -299,6 +299,9 @@ PAYOUT_PRICING_CONFIG = {
         "per_mirror_material": 30.00,
         "per_cabinet_door_pull_material": 10.00,
     },
+    "Pressure_Washing": {
+        "flat_cost": 250.00
+    },
     "Window_Washing": {
         "per_pane_rate": 20.00
     }

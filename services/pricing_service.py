@@ -408,6 +408,13 @@ class PayoutPricingEngine:
 
         return total
 
+    def _price_pressure_washing(self, d: dict, container) -> float:
+        cfg = self.config["Pressure_Washing"]
+
+        total = cfg["flat_cost"]
+
+        return total
+
     def _price_landscape_clean_up(self, d: dict, container) -> float:
         cfg = self.config["Landscape_Clean_Up"]
         return (
