@@ -234,6 +234,7 @@ MATERIAL_PRICING_CONFIG = {
         "demo_vinyl_per_sqft": 0.50,
         "demo_tile_per_sqft": 2.50,
         "furniture_move_per_sqft": 0.36,
+        "sales_tax": 0.078
     },
     "Flooring_Installation": {
         "material_per_sqft": {"LVP": 2.78, "LVT": 3.06},
@@ -245,6 +246,7 @@ MATERIAL_PRICING_CONFIG = {
         "per_toilet_rate": 30.00,
         "per_appliance_rate": 12.50,
         "transition_strips_per_1000_sqft": 3.00,
+        "sales_tax": 0.00
     },
     "Home_Clear_Outs": {
         "per_box_truck_load": 150,

@@ -287,6 +287,8 @@ class MaterialPricingEngine:
         if d.get("furniture_move"):
             total += sqft * cfg["furniture_move_per_sqft"]
 
+        total = total * (1 + cfg["sales_tax"])
+
         return total
 
     def _price_flooring_installation(self, d: dict, container) -> float:
@@ -309,6 +311,8 @@ class MaterialPricingEngine:
             total += sqft * cfg["demo_tile_per_sqft"]
         if d.get("furniture_move"):
             total += sqft * cfg["furniture_move_per_sqft"]
+
+        total = total * (1 + cfg["sales_tax"])
 
         return total
 
