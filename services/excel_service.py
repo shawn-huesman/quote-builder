@@ -756,7 +756,11 @@ def price_records_from_job(
 
         room_area_waste = None
         room_area = get_attr_if_type(container, "ceiling_area", task.task_type, {"Flooring_Installation",
-                                                                                    "Carpet_Installation"})
+                                                                                 "Carpet_Installation",
+                                                                                 "Move_Out_Cleaning",
+                                                                                 "Interior_Painting",
+                                                                                 "Exterior_Painting"
+                                                                                 })
         if room_area:
             room_area_waste = room_area * waste_multipler
 
