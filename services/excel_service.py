@@ -454,6 +454,82 @@ class _BaseSheetWriter:
         margin.font = BODY_FONT
 
 
+class RoomsSheetWriter(_BaseSheetWriter):
+
+    def write(self, wb: Workbook, records: list[PricedTaskRecord]) -> None:
+        ws = wb.create_sheet("Rooms")
+
+        r = 1
+        ws.cell(row=r, column=1, value="Room Measurements").font = TITLE_FONT
+        r += 2
+
+        table = self._write_table(ws, r, records)
+
+        if table.last_data_row >= table.first_data_row:
+            self._write_total_row(
+                ws, table.last_data_row + TASK_TOTAL_ROW_GAP,
+                table.first_data_row, table.last_data_row, table.num_headers,
+            )
+
+        self._autofit_and_filter(ws, table.header_row, table.last_data_row, table.num_headers)
+        self._set_column_widths(ws)
+        ws.freeze_panes = f"A{table.first_data_row}"
+
+    def _write_table(
+            self, ws: Worksheet, r: int, records: list[PricedTaskRecord]
+    ) -> TaskTableResult:
+        headers = ["Room"] + _measurement_headers()
+        self._write_header_row(ws, r, headers)
+        header_row = r
+        r += 1
+        first_data_row = r
+
+        room_data: dict[str, dict[str, float]] = {}
+        for rec in records:
+            if not rec.room_name:
+                continue
+            if rec.room_name not in room_data:
+                room_data[rec.room_name] = {attr: 0.0 for attr in ALL_MEASUREMENTS}
+
+            for attr in ALL_MEASUREMENTS:
+                val = getattr(rec, attr, None)
+                if val is not None and val > room_data[rec.room_name][attr]:
+                    room_data[rec.room_name][attr] = val
+
+        for room_name, measurements in room_data.items():
+            ws.cell(row=r, column=1, value=room_name).font = BODY_FONT
+            col = 2
+            for attr, _, _ in MEASUREMENT_COLUMNS:
+                val = measurements.get(attr, 0.0)
+                c = ws.cell(row=r, column=col, value=val if val > 0 else "")
+                if val > 0:
+                    c.number_format = MEASUREMENT_FMT
+                c.font = BODY_FONT
+                col += 1
+            r += 1
+
+        last_data_row = r - 1 if r > first_data_row else first_data_row - 1
+        return TaskTableResult(header_row, first_data_row, last_data_row, price_col=0, num_headers=len(headers))
+
+    def _write_total_row(
+            self, ws: Worksheet, r: int, first_data_row: int, last_data_row: int, num_cols: int
+    ) -> None:
+        ws.cell(row=r, column=1, value="Total").font = TOTAL_FONT
+        for col in range(2, num_cols + 1):
+            letter = get_column_letter(col)
+            value_range = f"{letter}{first_data_row}:{letter}{last_data_row}"
+            c = ws.cell(row=r, column=col, value=FormulaFactory.sum(value_range))
+            c.number_format = MEASUREMENT_FMT
+            c.font = TOTAL_FONT
+
+    def _set_column_widths(self, ws: Worksheet) -> None:
+        ws.column_dimensions["A"].width = TASK_ROOM_COLUMN_WIDTH
+        col = 2
+        for _, _, width in MEASUREMENT_COLUMNS:
+            ws.column_dimensions[get_column_letter(col)].width = width
+            col += 1
+
+
 class SummarySheetWriter(_BaseSheetWriter):
 
     def write(
@@ -670,6 +746,7 @@ class QuoteExcelBuilder:
         self.royalty_rate = royalty_rate
         self._summary_writer = SummarySheetWriter(royalty_rate)
         self._task_writer = TaskSheetWriter(royalty_rate)
+        self._rooms_writer = RoomsSheetWriter(royalty_rate)
 
     def build(
         self,
@@ -687,6 +764,9 @@ class QuoteExcelBuilder:
         ordered_types += [t for t in by_type if t not in TASK_TYPE_REGISTRY]
 
         self._summary_writer.write(wb, records, ordered_types, job_meta)
+
+        self._rooms_writer.write(wb, records)
+
         for task_type in ordered_types:
             self._task_writer.write(wb, task_type, by_type[task_type])
 
