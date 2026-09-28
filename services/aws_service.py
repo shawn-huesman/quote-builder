@@ -22,3 +22,17 @@ def get_secret(secret_id: str, region_id: str = AWS_DEFAULT_REGION):
     except ClientError as e:
         logger.error(f"AWS SecretsManager ClientError for secret '{secret_id}': {e}")
         return {}
+
+
+def upload_or_update_secret(secret_name: str, secret_value: str, region_id: str = AWS_DEFAULT_REGION):
+    client = boto3.client("secretsmanager", region_name=region_id)
+    try:
+        client.put_secret_value(
+            SecretId=secret_name,
+            SecretString=secret_value
+        )
+    except client.exceptions.ResourceNotFoundException:
+        client.create_secret(
+            Name=secret_name,
+            SecretString=secret_value
+        )
