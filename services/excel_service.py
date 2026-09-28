@@ -60,13 +60,13 @@ ALL_MEASUREMENTS = tuple(
     key for key, _, _ in MEASUREMENT_COLUMNS
 )
 
-PRICE_OFFSET, MATERIALS_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET, MARGIN_OFFSET = range(5)
+PRICE_OFFSET, PAYOUT_OFFSET, MATERIAL_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET, MARGIN_OFFSET = range(6)
 PRICE_COLUMN_HEADERS = (
-    "HS Price", "Materials", "Royalty", "Gross Profit", "Gross Margin %"
+    "HS Price", "Payout", "Material Cost", "Royalty", "Gross Profit", "Gross Margin %"
 )
 NUM_PRICE_COLUMNS = len(PRICE_COLUMN_HEADERS)
 SUMMABLE_PRICE_OFFSETS = (
-    PRICE_OFFSET, MATERIALS_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET,
+    PRICE_OFFSET, PAYOUT_OFFSET, MATERIAL_OFFSET, ROYALTY_OFFSET, GROSS_PROFIT_OFFSET,
 )
 
 
@@ -89,14 +89,13 @@ class FormulaFactory:
     def royalty(price_cell: str, rate: float) -> str:
         return f"=PRODUCT({price_cell},{rate})"
 
-    @staticmethod
     def gross_profit(
-            price_cell: str, materials_cell: str, royalty_cell: str,
+            price_cell: str, payout_cell: str, material_cell: str, royalty_cell: str,
             include_material: bool,
     ) -> str:
         if include_material:
-            return f"={price_cell}-{materials_cell}-{royalty_cell}"
-        return f"={price_cell}-{royalty_cell}"
+            return f"={price_cell}-{payout_cell}-{material_cell}-{royalty_cell}"
+        return f"={price_cell}-{payout_cell}-{royalty_cell}"
 
     @staticmethod
     def margin(gross_profit_cell: str, price_cell: str) -> str:
@@ -120,8 +119,12 @@ class PriceColumnLayout:
         return self.start_col + PRICE_OFFSET
 
     @property
-    def materials(self) -> int:
-        return self.start_col + MATERIALS_OFFSET
+    def payout(self) -> int:
+        return self.start_col + PAYOUT_OFFSET
+
+    @property
+    def material(self) -> int:
+        return self.start_col + MATERIAL_OFFSET
 
     @property
     def royalty(self) -> int:
@@ -417,7 +420,8 @@ class _BaseSheetWriter:
     ) -> None:
         layout = PriceColumnLayout(start_col)
         price_ref = layout.cell_ref(layout.price, row)
-        materials_ref = layout.cell_ref(layout.materials, row)
+        payout_ref = layout.cell_ref(layout.payout, row)
+        material_ref = layout.cell_ref(layout.material, row)
         royalty_ref = layout.cell_ref(layout.royalty, row)
         gross_profit_ref = layout.cell_ref(layout.gross_profit, row)
 
@@ -425,7 +429,11 @@ class _BaseSheetWriter:
         p.number_format = CURRENCY_FMT
         p.font = BODY_FONT
 
-        mat = ws.cell(row=row, column=layout.materials, value=rec.materials)
+        pay = ws.cell(row=row, column=layout.payout, value=rec.payout)
+        pay.number_format = CURRENCY_FMT
+        pay.font = BODY_FONT
+
+        mat = ws.cell(row=row, column=layout.material, value=rec.material_cost)
         mat.number_format = CURRENCY_FMT
         mat.font = BODY_FONT
 
@@ -439,7 +447,7 @@ class _BaseSheetWriter:
         gp = ws.cell(
             row=row, column=layout.gross_profit,
             value=FormulaFactory.gross_profit(
-                price_ref, materials_ref, royalty_ref,
+                price_ref, payout_ref, material_ref, royalty_ref,
                 spec.include_material_in_profit,
             ),
         )
@@ -602,12 +610,12 @@ class SummarySheetWriter(_BaseSheetWriter):
         return SummaryTableResult(table_start, first_data_row, last_data_row, price_start_col, len(headers))
 
     def _write_subtotals(
-        self, ws: Worksheet, r: int, ctx: SubtotalsContext,
+            self, ws: Worksheet, r: int, ctx: SubtotalsContext,
     ) -> tuple[int, int, int]:
         ws.cell(row=r, column=1, value="Totals by Task Type").font = TOTAL_FONT
         r += 1
         self._write_header_row(
-            ws, r, ["Task Type"] + [PRICE_COLUMN_HEADERS[i] for i in SUMMABLE_PRICE_OFFSETS],
+            ws, r, ["Task Type"] + [PRICE_COLUMN_HEADERS[i] for i in SUMMABLE_PRICE_OFFSETS] + ["Gross Margin %"],
         )
         r += 1
         subtotal_first_row = r
@@ -626,6 +634,13 @@ class SummarySheetWriter(_BaseSheetWriter):
                 c = ws.cell(row=r, column=dest_col, value=formula)
                 c.number_format = CURRENCY_FMT
                 c.font = BODY_FONT
+
+            price_ref = f"B{r}"
+            gp_ref = f"F{r}"
+            margin_c = ws.cell(row=r, column=7, value=FormulaFactory.margin(gp_ref, price_ref))
+            margin_c.number_format = "0%"
+            margin_c.font = BODY_FONT
+
             r += 1
 
         subtotal_last_row = r - 1
@@ -642,6 +657,12 @@ class SummarySheetWriter(_BaseSheetWriter):
             c = ws.cell(row=r, column=col, value=FormulaFactory.sum(value_range))
             c.number_format = CURRENCY_FMT
             c.font = TOTAL_FONT
+
+        price_ref = f"B{r}"
+        gp_ref = f"F{r}"
+        c = ws.cell(row=r, column=7, value=FormulaFactory.margin(gp_ref, price_ref))
+        c.number_format = "0%"
+        c.font = TOTAL_FONT
 
     def _set_column_widths(self, ws: Worksheet) -> None:
         ws.column_dimensions["A"].width = SUMMARY_LABEL_COLUMN_WIDTH
