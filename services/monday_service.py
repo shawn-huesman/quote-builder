@@ -59,7 +59,7 @@ def get_pipeline_workspaces(monday_api_key: str) -> dict:
 
     query = """
             query {
-              boards(limit: 10000) {
+              boards(limit: 150000) {
                 id
                 name
                 workspace {
@@ -108,6 +108,19 @@ def get_pipeline_workspaces(monday_api_key: str) -> dict:
         return {}
 
 
+def format_market_name(workspace_name: str) -> str:
+    return "".join(char for char in workspace_name.lower() if char.isalpha())
+
+
+def get_workspace_id(monday_board_id: str, monday_api_key: str) -> str:
+    url = "https://api.monday.com/v2"
+    headers = {"Authorization": monday_api_key}
+    query = f"query {{ boards (ids: {monday_board_id}) {{ workspace_id }} }}"
+    response = requests.post(url, json={'query': query}, headers=headers)
+    data = response.json()
+    return data['data']['boards'][0]['workspace_id']
+
+
 def get_market(monday_board_id: str, monday_api_key: str) -> str:
     logger.info(f"Querying Monday.com workspace for board ID: {monday_board_id}")
     url = "https://api.monday.com/v2"
@@ -141,7 +154,7 @@ def get_market(monday_board_id: str, monday_api_key: str) -> str:
 
         workspace = boards[0].get('workspace')
         workspace_name = workspace.get('name') if workspace else "Main Workspace"
-        market = "".join(char for char in workspace_name.lower() if char.isalpha())
+        market = format_market_name(workspace_name)
 
         logger.info(f"Successfully resolved market name: '{market}' from workspace: '{workspace_name}'")
         return market
