@@ -2,19 +2,71 @@ import json
 import dataclasses
 import logging
 import os
+import ast
 from typing import Any, Dict
+from contextlib import contextmanager
 
 from models import QuoteJob, Space, Room, Task
 from config import (DEFAULT_SENDER_EMAIL, EXCEL_FOLDER_ID, EXCEL_DELEGATE_EMAIL,
                     PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE)
 from services import aws_service, monday_service, rendr_service, gemini_service, excel_email_service
+                    PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, EXCEL_CONFIG_FOLDER_ID,
+                    HOMESTRETCH_COOKIE)
+from services import aws_service, monday_service, rendr_service, gemini_service, excel_finance_sheet_service
 from services.pricing_service import PricingEngine, MaterialPricingEngine, PayoutPricingEngine
 from services.excel_service import QuoteExcelBuilder
+from services.excel_config_sheet_service import MarketConfigManager
+from services.email_error_service import EmailErrorHandler, log_errors
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+logger.addHandler(EmailErrorHandler(
+    get_key=lambda: aws_service.get_secret("excel_key"),
+    sender=EXCEL_DELEGATE_EMAIL,
+    recipients=["shawn.huesman@home-stretch.com", "evan.lewis@home-stretch.com"]
+))
 
 
+class JobContextAdapter(logging.LoggerAdapter):
+    def process(self, msg, kwargs):
+        kwargs.setdefault('extra', {})
+        kwargs['extra'].update(self.extra)
+        return msg, kwargs
+
+
+@contextmanager
+def bind_job_context(job, board_id=None, workspace_id=None):
+    """Context manager to automatically attach job metadata to logs and emails."""
+    context = {
+        "job_address": getattr(job, "address", "Unknown Address"),
+        "job_details": {
+            "address": getattr(job, "address", None),
+            "monday_item_id": getattr(job, "monday_item_id", None),
+            "monday_board_id": board_id or getattr(job, "monday_board_id", None),
+            "workspace_id": workspace_id,
+            "project_id": getattr(job, "project_id", None),
+        }
+    }
+    old_adapter = logging.LoggerAdapter(logger, context)
+    try:
+        yield old_adapter
+    finally:
+        pass
+
+
+def process_boards_and_update_secrets(boards_data: dict):
+    for board_id, workspace in boards_data.items():
+        workspace_name = workspace.get("name")
+        print(workspace_name, "here!")
+        market = monday_service.format_market_name(workspace_name)
+        try:
+            secret_data = str(aws_service.get_secret(market))
+            aws_service.upload_or_update_secret(board_id, secret_data)
+        except Exception as e:
+            print(f"Failed to process secret for market '{market}' (Board ID: {board_id}): {e}")
+
+
+@log_errors
 def run_quote_pipeline(event_data: Dict[str, Any]):
     job = build_job(event_data)
     board_id = job.monday_board_id
@@ -28,11 +80,21 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     prompt_text_base = config["prompt_text_base"]
     if not rendr_token:
         return 500, {"message": "Rendr Access Token collection failed"}
+    workspace_id = monday_service.get_workspace_id_from_board(board_id, monday_api_key)
+
+    with bind_job_context(job, board_id, workspace_id):
+        excel_key = config["excel_key"]
+        rendr_token = config["rendr_token"]
+        vertex_key = config["vertex_key"]
+        prompt_text_base = config["prompt_text_base"]
+        if not rendr_token:
+            raise ValueError(f"Rendr Access Token collection failed")
 
     if not populate_spaces(job, rendr_token):
         return 200, {"message": "No matching Rendr project found", "pulseId": job.monday_item_id}
+        if not populate_spaces(job, rendr_token):
+            raise RuntimeError(f"No matching Rendr project found for address {job.address}")
 
-    try:
         populate_tasks(job, vertex_key, prompt_text_base)
     except Exception as e:
         logger.critical(f"VertexAI processing failure: {e}")
@@ -42,6 +104,16 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     apply_pricing(job, MATERIAL_PRICING_CONFIG, MaterialPricingEngine, "material_price")
     apply_pricing(job, PAYOUT_PRICING_CONFIG, PayoutPricingEngine, "payout_price")
     apply_service_language(job)
+        market_config = MarketConfigManager.get_default_configs()
+
+        pricing_config = market_config.get("Pricing Config", PRICING_CONFIG)
+        material_pricing_config = market_config.get("Material Pricing Config", MATERIAL_PRICING_CONFIG)
+        payout_pricing_config = market_config.get("Payout Pricing Config", PAYOUT_PRICING_CONFIG)
+
+        apply_pricing(job, pricing_config, PricingEngine, "price")
+        apply_pricing(job, material_pricing_config, MaterialPricingEngine, "material_price")
+        apply_pricing(job, payout_pricing_config, PayoutPricingEngine, "payout_price")
+        apply_service_language(job)
 
     pipeline_workspaces = monday_service.get_pipeline_workspaces(monday_api_key)
     excel_email_service.sync_workspace_folders(excel_key, EXCEL_DELEGATE_EMAIL, EXCEL_FOLDER_ID, pipeline_workspaces)
@@ -63,22 +135,48 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
         role="writer",
         custom_message="You recently created a HOMEstretch quote. Here is access to your excel workspace subfolder."
     )
+        folder_id = excel_finance_sheet_service.get_folder_id_by_workspace_id(excel_key, EXCEL_DELEGATE_EMAIL, EXCEL_FOLDER_ID, workspace_id)
+        spreadsheet_title = job.address
+        builder = QuoteExcelBuilder()
+        excel_buffer = builder.build_to_buffer(job)
+        excel_finance_sheet_service.upload_excel_buffer_to_google_drive(excel_buffer, excel_key, EXCEL_DELEGATE_EMAIL,
+                                                                folder_id, spreadsheet_title)
+        excel_finance_sheet_service.share_folder_via_email(
+            excel_key=excel_key,
+            delegate_user=EXCEL_DELEGATE_EMAIL,
+            folder_id=folder_id,
+            email_address="shawn.huesman@home-stretch.com",
+            role="writer",
+            custom_message="You recently created a HOMEstretch quote. Here is access to your excel workspace subfolder."
+        )
 
     payload = build_payload(job)
     logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
+        payload = build_payload(job)
 
     rendr_service.send_submission(payload, HOMESTRETCH_COOKIE)
     return 200, {"challenge": ""}
+        rendr_service.send_submission(payload, HOMESTRETCH_COOKIE)
+        return 200, {"challenge": ""}
 
 
 def apply_pricing(job: QuoteJob, config, pricing_engine, target_attr):
     engine = pricing_engine(config)
+
+    def _process_task_list(tasks, container):
+        for task in tasks:
+            price = engine.price_task(task.task_type, task.details, container)
+            setattr(task, target_attr, price)
+
+            if hasattr(engine, "explain_task"):
+                explanation = engine.explain_task(task.task_type, task.details, container)
+                setattr(task, f"{target_attr}_symbolic", explanation["symbolic_formula"])
+                setattr(task, f"{target_attr}_numeric", explanation["numeric_formula"])
+
     for space in job.spaces:
-        for task in space.tasks:
-            setattr(task, target_attr, engine.price_task(task.task_type, task.details, space))
+        _process_task_list(space.tasks, space)
         for room in space.rooms:
-            for task in room.tasks:
-                setattr(task, target_attr, engine.price_task(task.task_type, task.details, room))
+            _process_task_list(room.tasks, room)
 
     logger.info(f"===Pricing Applied ({pricing_engine})===:")
     _prettyprint(job)
@@ -198,7 +296,7 @@ def _room_entry(name: str, container, tasks: list) -> dict:
 
 
 def populate_spaces(job: QuoteJob, token: str) -> bool:
-    raw = rendr_service.find_spaces(token, job.address, page_size=100)
+    raw = rendr_service.find_spaces(token, job.address, page_size=500)
     if not raw:
         return False
 
@@ -320,8 +418,28 @@ def _build_prompt(base: str, job: QuoteJob) -> str:
 def _fetch_config(board_id: str) -> dict:
     monday_secrets = aws_service.get_secret("monday_api_key")
     monday_key = monday_secrets.get("monday_api_key") if isinstance(monday_secrets, dict) else monday_secrets
-    market = monday_service.get_market(board_id, monday_key)
-    aws_creds = aws_service.get_secret(market)
+    workspace_id = monday_service.get_workspace_id(board_id, monday_key)
+
+    raw_secret = aws_service.get_secret(workspace_id)
+
+    if isinstance(raw_secret, dict):
+        aws_creds = raw_secret
+    elif isinstance(raw_secret, str) and raw_secret.strip():
+        try:
+            aws_creds = json.loads(raw_secret)
+        except json.JSONDecodeError:
+            try:
+                aws_creds = ast.literal_eval(raw_secret)
+            except (ValueError, SyntaxError) as e:
+                logger.error(
+                    f"Failed to parse secret for workspace_id '{workspace_id}' using AST. "
+                )
+                aws_creds = {}
+    else:
+        logger.warning(
+            f"Secret for workspace_id '{workspace_id}' is empty or an unexpected type. "
+        )
+        aws_creds = {}
 
     return {
         "monday_api_key": monday_key,
