@@ -118,7 +118,11 @@ def get_workspace_id(monday_board_id: str, monday_api_key: str) -> str:
     query = f"query {{ boards (ids: {monday_board_id}) {{ workspace_id }} }}"
     response = requests.post(url, json={'query': query}, headers=headers)
     data = response.json()
-    return data['data']['boards'][0]['workspace_id']
+    try:
+        workspace_id = data['data']['boards'][0]['workspace_id']
+        return workspace_id
+    except IndexError:
+        raise RuntimeError(f"Monday board id out of bounds for board id: {monday_board_id}")
 
 
 def get_market(monday_board_id: str, monday_api_key: str) -> str:
