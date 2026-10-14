@@ -52,15 +52,8 @@ class PricingEngine:
         return total
 
     def _price_exterior_painting(self, d: dict, container) -> float:
-        # Use interior sqft for exterior painting
         sqft = container.paintable_sqft
-
-        cfg = self.config["Exterior_Painting"]
-        sub = cfg["substrate_multipliers"].get(d.get("substrate", "vinyl"), 1.0)
-        story = cfg["story_multiplier_step"] ** max(0, d.get("stories", 1) - 1)
-        base = sqft * cfg["per_interior_sqft_rate"] * sub * story
-        deck = cfg["deck_rates"].get(d.get("deck_size", "none"), 0.0)
-        return base + deck
+        return sqft * 3.5
 
     def _price_cabinet_painting(self, d: dict, container) -> float:
         cfg = self.config["Cabinet_Painting"]
