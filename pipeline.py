@@ -140,9 +140,6 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
             custom_message="You recently created a HOMEstretch quote. Here is access to your excel workspace subfolder."
         )
 
-    payload = build_payload(job)
-    logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
-        payload = build_payload(job)
         payload = build_payload(job)
         logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
 
