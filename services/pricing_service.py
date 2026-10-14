@@ -2,6 +2,119 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import ast
+import inspect
+import sys
+import textwrap
+from typing import Tuple, Any, Dict
+
+
+class ExpressionFormatter(ast.NodeVisitor):
+    def __init__(self, local_scope: Dict[str, Any], global_scope: Dict[str, Any]):
+        self.local_scope = local_scope
+        self.global_scope = global_scope
+
+    def _eval(self, node: ast.AST) -> Any:
+        try:
+            code = compile(ast.Expression(body=node), filename="<ast>", mode="eval")
+            return eval(code, self.global_scope, self.local_scope)
+        except Exception:
+            return None
+
+    def format(self, node: ast.AST) -> Tuple[str, str]:
+        if isinstance(node, ast.BinOp):
+            left_sym, left_num = self.format(node.left)
+            right_sym, right_num = self.format(node.right)
+            op = {ast.Add: "+", ast.Sub: "-", ast.Mult: "*", ast.Div: "/"}.get(type(node.op), "?")
+            return f"{left_sym} {op} {right_sym}", f"{left_num} {op} {right_num}"
+
+        elif isinstance(node, ast.Name):
+            val = self._eval(node)
+            num_str = str(round(val, 4)) if isinstance(val, (int, float)) else str(val)
+            return node.id, num_str
+
+        elif isinstance(node, ast.Constant):
+            return str(node.value), str(node.value)
+
+        elif isinstance(node, ast.Subscript):
+            val = self._eval(node)
+            key = node.slice.value if isinstance(node.slice, ast.Constant) else "key"
+            num_str = str(round(val, 4)) if isinstance(val, (int, float)) else str(val)
+            return str(key), num_str
+
+        elif isinstance(node, ast.Call):
+            if isinstance(node.func, ast.Name) and node.func.id == "max":
+                formatted_args_sym = []
+                formatted_args_num = []
+
+                for arg in node.args:
+                    arg_sym, arg_num = self.format(arg)
+                    formatted_args_sym.append(arg_sym)
+                    formatted_args_num.append(arg_num)
+
+                sym_str = f"max({', '.join(formatted_args_sym)})"
+                num_str = f"max({', '.join(formatted_args_num)})"
+                return sym_str, num_str
+
+            if isinstance(node.func, ast.Attribute) and node.func.attr == "get":
+                val = self._eval(node)
+                num_str = str(round(val, 4)) if isinstance(val, (int, float)) else str(val)
+                key_name = node.args[0].value if node.args and isinstance(node.args[0], ast.Constant) else "key"
+                return str(key_name), num_str
+
+            val = self._eval(node)
+            num_str = str(round(val, 4)) if isinstance(val, (int, float)) else str(val)
+            return "val", num_str
+
+        val = self._eval(node)
+        num_str = str(round(val, 4)) if isinstance(val, (int, float)) else str(val)
+        return "expr", num_str
+
+
+def explain_method(method, *args, **kwargs) -> Tuple[str, str, float]:
+    recorded_steps = []
+
+    def trace_calls(frame, event, arg):
+        if event == "line":
+            local_scope = frame.f_locals.copy()
+            global_scope = frame.f_globals.copy()
+
+            line_code = inspect.getframeinfo(frame).code_context
+            if line_code:
+                code_str = line_code[0].strip()
+                if "+=" in code_str or ("total =" in code_str and "max(" not in code_str):
+                    recorded_steps.append((code_str, local_scope, global_scope))
+        return trace_calls
+
+    sys.settrace(trace_calls)
+    try:
+        result = method(*args, **kwargs)
+    finally:
+        sys.settrace(None)
+
+    terms_symbolic = []
+    terms_numeric = []
+
+    for code_str, local_scope, global_scope in recorded_steps:
+        if "=" in code_str:
+            rhs_str = code_str.split("=", 1)[1].strip()
+            try:
+                tree = ast.parse(rhs_str, mode="eval")
+                formatter = ExpressionFormatter(local_scope, global_scope)
+                sym, num = formatter.format(tree.body)
+
+                val = eval(rhs_str, global_scope, local_scope)
+                if isinstance(val, (int, float)) and val > 0:
+                    terms_symbolic.append(f"({sym})")
+                    terms_numeric.append(f"({num})")
+            except Exception:
+                continue
+
+    symbolic_formula = " + ".join(terms_symbolic) if terms_symbolic else "0"
+    numeric_formula = " + ".join(terms_numeric) if terms_numeric else "0"
+
+    return symbolic_formula, numeric_formula, result
+
 
 class PricingEngine:
     def __init__(self, config: dict):
@@ -26,6 +139,29 @@ class PricingEngine:
             price = round(price / 25) * 25
 
         return float(price)
+
+    def explain_task(self, task_type: str, details: dict, container) -> dict:
+        method_name = f"_price_{task_type.lower()}"
+        method = getattr(self, method_name, None)
+        if not method:
+            return {"symbolic": "", "numeric": "", "value": 0.0}
+
+        symbolic, numeric, base_price = explain_method(method, details, container)
+
+        final_price = base_price * self.config.get("royalty_multiplier", 1.0)
+
+        task_lower = task_type.lower()
+        if "carpet" not in task_lower and "flooring" not in task_lower:
+            final_price = round(final_price / 5) * 5
+
+        if task_lower == "carpet_cleaning" or task_lower == "carpet_removal":
+            final_price = round(final_price / 25) * 25
+
+        return {
+            "value": float(final_price),
+            "symbolic_formula": symbolic,
+            "numeric_formula": numeric
+        }
 
     def _price_interior_painting(self, d: dict, container) -> float:
         cfg = self.config["Interior_Painting"]
@@ -394,6 +530,24 @@ class PayoutPricingEngine:
     def _price_flooring_installation(self, d: dict, container) -> float:
         return self._calculate_flooring_price("Flooring_Installation", container)
 
+    def _price_home_clear_outs(self, d: dict, container) -> float:
+        cfg = self.config["Home_Clear_Outs"]
+
+        total = (d.get("box_truck_loads", 0) * cfg["per_box_truck_load_people_needed"] * cfg["per_person_rate"]
+                + d.get("dumpster_20yd_count", 0) * cfg["dumpster_20yd_people_needed"] + cfg["per_person_rate"]
+                + d.get("dumpster_30yd_count", 0) * cfg["dumpster_30yd_people_needed"] + cfg["per_person_rate"]
+                + d.get("dumpster_40yd_count", 0) * cfg["dumpster_40yd_people_needed"] + cfg["per_person_rate"])
+
+        return total
+
+    def _price_move_out_cleaning(self, d: dict, container) -> float:
+        cfg = self.config["Move_Out_Cleaning"]
+        sqft = container.paintable_sqft
+
+        return (
+            max(cfg["minimum_price"], cfg["per_sqft_price"] * sqft)
+        )
+
     def _price_carpet_cleaning(self, d: dict, container) -> float:
         cfg = self.config["Carpet_Cleaning"]
 
@@ -410,10 +564,8 @@ class PayoutPricingEngine:
 
     def _price_landscape_clean_up(self, d: dict, container) -> float:
         cfg = self.config["Landscape_Clean_Up"]
-        return (
-                d.get("num_beds_mulched", 0) * cfg["per_mulch_bed_rate"]
-                + d.get("num_bags_mulch", 0) * cfg["per_mulch_bag_rate"]
-        )
+
+        return max(cfg["minimum_price"], (d.get("total_man_days", 0) * cfg["per_man_day_rate"]))
 
     def _price_light_handyman_work(self, d: dict, container) -> float:
         cfg = self.config["Light_Handyman_Work"]
