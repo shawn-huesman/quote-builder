@@ -163,7 +163,7 @@ PRICING_CONFIG = {
         "per_sqft_price": 0.20
     },
     "Landscape_Clean_Up": {
-        "per_man_day_rate": 400.00,
+        "per_man_day_rate": 450.00,
         "per_mulch_bed_rate": 120.00,
         "per_mulch_bag_rate": 8.50
     },
@@ -258,8 +258,8 @@ MATERIAL_PRICING_CONFIG = {
         "per_refrigerator": 95,
     },
     "Landscape_Clean_Up": {
-        "per_mulch_bed_rate": 120,
-        "per_mulch_bag_rate": 8.50,
+        "per_mulch_bed_rate": 30.00,
+        "per_mulch_bag_rate": 3.00,
     },
     "Light_Handyman_Work": {
         "per_light_fixture_material": 90.00,
@@ -289,9 +289,20 @@ PAYOUT_PRICING_CONFIG = {
     "Carpet_Cleaning": {
         "per_room_rate": 50.00,
     },
+    "Home_Clear_Outs": {
+        "per_box_truck_load_people_needed": 2,
+        "dumpster_20yd_people_needed": 2,
+        "dumpster_30yd_people_needed": 2,
+        "dumpster_40yd_people_needed": 3,
+        "per_person_rate": 200.00
+    },
+    "Move_Out_Cleaning": {
+        "per_sqft_price": 0.20,
+        "minimum_price": 500
+    },
     "Landscape_Clean_Up": {
-        "per_mulch_bed_rate": 0,
-        "per_mulch_bag_rate": 0,
+        "minimum_price": 650.00,
+        "per_man_day_rate": 225.00
     },
     "Light_Handyman_Work": {
         "per_light_fixture_material": 30.00,
