@@ -44,12 +44,17 @@ SUMMARY_SECTION_GAP = 2
 TASK_TOTAL_ROW_GAP = 2
 
 MEASUREMENT_COLUMNS = (
+    ("gallons_ceiling", "Gallons Needed (Ceiling)", 18),
+    ("gallons_wall", "Gallons Needed (Wall)", 18),
+    ("gallons_trim", "Gallons Needed (Trim)", 18),
     ("room_area", "Room Area (sqft)", 16),
     ("room_area_waste", "Room Area (w/Waste) (sqft)", 16),
     ("wall_area", "Wall Area (sqft)", 16),
-    ("paintable_sqft", "Paintable Area (sqft)", 18),
+    ("paintable_sqft", "Paintable Area (walls+ceilings-openings) (sqft)", 18),
     ("perimeter", "Perimeter (ln ft)", 16),
 )
+
+GALLON_FMT = '#,##0.00'
 
 MEASUREMENT_MAP = {
     key: (label, width)
@@ -319,6 +324,15 @@ class PricedTaskRecord:
     wall_area: Optional[float] = None
     paintable_sqft: Optional[float] = None
     perimeter: Optional[float] = None
+    price_symbolic: Optional[str] = None
+    price_numeric: Optional[str] = None
+    payout_symbolic: Optional[str] = None
+    payout_numeric: Optional[str] = None
+    material_symbolic: Optional[str] = None
+    material_numeric: Optional[str] = None
+    gallons_ceiling: Optional[float] = None
+    gallons_wall: Optional[float] = None
+    gallons_trim: Optional[float] = None
 
     @property
     def materials(self) -> float:
@@ -409,7 +423,10 @@ class _BaseSheetWriter:
             value = getattr(rec, attr, None)
             c = ws.cell(row=row, column=col, value=value if value is not None else "")
             if value is not None:
-                c.number_format = MEASUREMENT_FMT
+                if "gallons" in attr:
+                    c.number_format = GALLON_FMT
+                else:
+                    c.number_format = MEASUREMENT_FMT
             c.font = BODY_FONT
             col += 1
         return col
@@ -463,12 +480,11 @@ class _BaseSheetWriter:
 
 
 class RoomsSheetWriter(_BaseSheetWriter):
-
     def write(self, wb: Workbook, records: list[PricedTaskRecord]) -> None:
         ws = wb.create_sheet("Rooms")
 
         r = 1
-        ws.cell(row=r, column=1, value="Room Measurements").font = TITLE_FONT
+        ws.cell(row=r, column=1, value="Room Measurements & Pricing").font = TITLE_FONT
         r += 2
 
         table = self._write_table(ws, r, records)
@@ -476,66 +492,137 @@ class RoomsSheetWriter(_BaseSheetWriter):
         if table.last_data_row >= table.first_data_row:
             self._write_total_row(
                 ws, table.last_data_row + TASK_TOTAL_ROW_GAP,
-                table.first_data_row, table.last_data_row, table.num_headers,
+                table.non_home_rows, table.num_headers,
+                table.num_measurement_cols,
             )
 
         self._autofit_and_filter(ws, table.header_row, table.last_data_row, table.num_headers)
-        self._set_column_widths(ws)
+        self._set_column_widths(ws, table.task_types)
         ws.freeze_panes = f"A{table.first_data_row}"
 
     def _write_table(
             self, ws: Worksheet, r: int, records: list[PricedTaskRecord]
     ) -> TaskTableResult:
-        headers = ["Room"] + _measurement_headers()
+        by_type = {}
+        for rec in records:
+            by_type.setdefault(rec.task_type, []).append(rec)
+
+        ordered_types = [t for t in TASK_TYPE_REGISTRY if t in by_type]
+        ordered_types += [t for t in by_type if t not in TASK_TYPE_REGISTRY]
+
+        task_headers = [
+            (TASK_TYPE_REGISTRY.get(tt) or _spec_for(tt, {})).display_name
+            for tt in ordered_types
+        ]
+
+        headers = ["Room"] + _measurement_headers() + task_headers + ["Total Room Price"]
         self._write_header_row(ws, r, headers)
         header_row = r
         r += 1
         first_data_row = r
 
-        room_data: dict[str, dict[str, float]] = {}
+        room_measurements: dict[str, dict[str, float]] = {}
+        room_task_prices: dict[str, dict[str, float]] = {}
+
         for rec in records:
             if not rec.room_name:
                 continue
-            if rec.room_name not in room_data:
-                room_data[rec.room_name] = {attr: 0.0 for attr in ALL_MEASUREMENTS}
 
+            if rec.room_name not in room_measurements:
+                room_measurements[rec.room_name] = {attr: 0.0 for attr in ALL_MEASUREMENTS}
             for attr in ALL_MEASUREMENTS:
                 val = getattr(rec, attr, None)
-                if val is not None and val > room_data[rec.room_name][attr]:
-                    room_data[rec.room_name][attr] = val
+                if val is not None and val > room_measurements[rec.room_name][attr]:
+                    room_measurements[rec.room_name][attr] = val
 
-        for room_name, measurements in room_data.items():
+            if rec.room_name not in room_task_prices:
+                room_task_prices[rec.room_name] = {tt: 0.0 for tt in ordered_types}
+            if rec.task_type in room_task_prices[rec.room_name]:
+                room_task_prices[rec.room_name][rec.task_type] += rec.price or 0.0
+
+        non_home_rows = []
+
+        for room_name, measurements in room_measurements.items():
+            if room_name.lower() != "home":
+                non_home_rows.append(r)
+
             ws.cell(row=r, column=1, value=room_name).font = BODY_FONT
             col = 2
+
             for attr, _, _ in MEASUREMENT_COLUMNS:
                 val = measurements.get(attr, 0.0)
                 c = ws.cell(row=r, column=col, value=val if val > 0 else "")
                 if val > 0:
-                    c.number_format = MEASUREMENT_FMT
+                    c.number_format = GALLON_FMT if "gallons" in attr else MEASUREMENT_FMT
                 c.font = BODY_FONT
                 col += 1
+
+            task_price_start_col = col
+            for tt in ordered_types:
+                price_val = room_task_prices[room_name].get(tt, 0.0)
+                c = ws.cell(row=r, column=col, value=price_val if price_val > 0 else "")
+                if price_val > 0:
+                    c.number_format = CURRENCY_FMT
+                c.font = BODY_FONT
+                col += 1
+
+            task_price_end_col = col - 1
+            if task_price_end_col >= task_price_start_col:
+                start_let = get_column_letter(task_price_start_col)
+                end_let = get_column_letter(task_price_end_col)
+                tot_c = ws.cell(row=r, column=col, value=FormulaFactory.sum(f"{start_let}{r}:{end_let}{r}"))
+            else:
+                tot_c = ws.cell(row=r, column=col, value=0.0)
+
+            tot_c.number_format = CURRENCY_FMT
+            tot_c.font = BODY_FONT
             r += 1
 
         last_data_row = r - 1 if r > first_data_row else first_data_row - 1
-        return TaskTableResult(header_row, first_data_row, last_data_row, price_col=0, num_headers=len(headers))
+
+        res = TaskTableResult(header_row, first_data_row, last_data_row, price_col=0, num_headers=len(headers))
+        res.task_types = ordered_types
+        res.num_measurement_cols = len(MEASUREMENT_COLUMNS)
+        res.non_home_rows = non_home_rows
+        return res
 
     def _write_total_row(
-            self, ws: Worksheet, r: int, first_data_row: int, last_data_row: int, num_cols: int
+            self, ws: Worksheet, r: int, non_home_rows: list[int], num_cols: int, num_measurement_cols: int
     ) -> None:
-        ws.cell(row=r, column=1, value="Total").font = TOTAL_FONT
-        for col in range(2, num_cols + 1):
+        ws.cell(row=r, column=1, value="total (not including home space)").font = TOTAL_FONT
+
+        for col in range(2, 2 + num_measurement_cols):
             letter = get_column_letter(col)
-            value_range = f"{letter}{first_data_row}:{letter}{last_data_row}"
-            c = ws.cell(row=r, column=col, value=FormulaFactory.sum(value_range))
-            c.number_format = MEASUREMENT_FMT
+            if non_home_rows:
+                value_args = ",".join(f"{letter}{row}" for row in non_home_rows)
+                formula = f"=SUM({value_args})"
+            else:
+                formula = 0.0
+            c = ws.cell(row=r, column=col, value=formula)
+            c.number_format = GALLON_FMT if col < 2 + 3 else MEASUREMENT_FMT
             c.font = TOTAL_FONT
 
-    def _set_column_widths(self, ws: Worksheet) -> None:
+        for col in range(2 + num_measurement_cols, num_cols + 1):
+            letter = get_column_letter(col)
+            if non_home_rows:
+                value_args = ",".join(f"{letter}{row}" for row in non_home_rows)
+                formula = f"=SUM({value_args})"
+            else:
+                formula = 0.0
+            c = ws.cell(row=r, column=col, value=formula)
+            c.number_format = CURRENCY_FMT
+            c.font = TOTAL_FONT
+
+    def _set_column_widths(self, ws: Worksheet, task_types: list) -> None:
         ws.column_dimensions["A"].width = TASK_ROOM_COLUMN_WIDTH
         col = 2
         for _, _, width in MEASUREMENT_COLUMNS:
             ws.column_dimensions[get_column_letter(col)].width = width
             col += 1
+        for _ in task_types:
+            ws.column_dimensions[get_column_letter(col)].width = PRICE_COLUMN_WIDTH
+            col += 1
+        ws.column_dimensions[get_column_letter(col)].width = PRICE_COLUMN_WIDTH
 
 
 class SummarySheetWriter(_BaseSheetWriter):
@@ -761,6 +848,61 @@ class TaskSheetWriter(_BaseSheetWriter):
         for offset in range(1, NUM_PRICE_COLUMNS + 1):
             ws.column_dimensions[get_column_letter(col + offset)].width = PRICE_COLUMN_WIDTH
 
+class ExplanationsSheetWriter(_BaseSheetWriter):
+
+    def write(self, wb: Workbook, records: list[PricedTaskRecord]) -> None:
+        ws = wb.create_sheet("(Task Explanations)")
+
+        r = 1
+        ws.cell(row=r, column=1, value="Task Explanations").font = TITLE_FONT
+        r += 2
+
+        headers = [
+            "Room", "Task Type", "Scope", "HS Price",
+            "Price Symbolic Formula", "Price Numeric Formula",
+            "Payout Symbolic Formula", "Payout Numeric Formula",
+            "Material Symbolic Formula", "Material Numeric Formula"
+        ]
+        self._write_header_row(ws, r, headers)
+        header_row = r
+        r += 1
+        first_data_row = r
+
+        for rec in records:
+            spec = _spec_for(rec.task_type, rec.details)
+            ws.cell(row=r, column=1, value=rec.room_name).font = BODY_FONT
+            ws.cell(row=r, column=2, value=spec.display_name).font = BODY_FONT
+            ws.cell(row=r, column=3, value=rec.resolved_scope()).font = BODY_FONT
+
+            p = ws.cell(row=r, column=4, value=rec.price)
+            p.number_format = CURRENCY_FMT
+            p.font = BODY_FONT
+
+            ws.cell(row=r, column=5, value=rec.price_symbolic or "").font = BODY_FONT
+            ws.cell(row=r, column=6, value=rec.price_numeric or "").font = BODY_FONT
+            ws.cell(row=r, column=7, value=rec.payout_symbolic or "").font = BODY_FONT
+            ws.cell(row=r, column=8, value=rec.payout_numeric or "").font = BODY_FONT
+            ws.cell(row=r, column=9, value=rec.material_symbolic or "").font = BODY_FONT
+            ws.cell(row=r, column=10, value=rec.material_numeric or "").font = BODY_FONT
+            r += 1
+
+        last_data_row = r - 1
+        self._autofit_and_filter(ws, header_row, last_data_row, len(headers))
+        self._set_column_widths(ws)
+        ws.freeze_panes = f"A{first_data_row}"
+
+    def _set_column_widths(self, ws: Worksheet) -> None:
+        ws.column_dimensions["A"].width = TASK_ROOM_COLUMN_WIDTH
+        ws.column_dimensions["B"].width = SUMMARY_LABEL_COLUMN_WIDTH
+        ws.column_dimensions["C"].width = SUMMARY_SCOPE_COLUMN_WIDTH
+        ws.column_dimensions["D"].width = PRICE_COLUMN_WIDTH
+        ws.column_dimensions["E"].width = 35
+        ws.column_dimensions["F"].width = 35
+        ws.column_dimensions["G"].width = 35
+        ws.column_dimensions["H"].width = 35
+        ws.column_dimensions["I"].width = 35
+        ws.column_dimensions["J"].width = 35
+
 
 class QuoteExcelBuilder:
     def __init__(self, royalty_rate: float = DEFAULT_ROYALTY_RATE):
@@ -768,6 +910,7 @@ class QuoteExcelBuilder:
         self._summary_writer = SummarySheetWriter(royalty_rate)
         self._task_writer = TaskSheetWriter(royalty_rate)
         self._rooms_writer = RoomsSheetWriter(royalty_rate)
+        self._explanations_writer = ExplanationsSheetWriter(royalty_rate)
 
     def build(
         self,
@@ -787,6 +930,8 @@ class QuoteExcelBuilder:
         self._summary_writer.write(wb, records, ordered_types, job_meta)
 
         self._rooms_writer.write(wb, records)
+
+        self._explanations_writer.write(wb, records)
 
         for task_type in ordered_types:
             self._task_writer.write(wb, task_type, by_type[task_type])
@@ -869,6 +1014,10 @@ def price_records_from_job(
         paintable_sqft = get_attr_if_type(container, "paintable_sqft", task.task_type, {"Interior_Painting"})
         perimeter = get_attr_if_type(container, "perimeter", task.task_type, {"Interior_Painting"})
 
+        gallons_ceiling = (room_area / 350.0) * 2.0 if room_area else None
+        gallons_wall = (wall_area / 350.0) * 2.0 if wall_area else None
+        gallons_trim = (perimeter / 900.0) * 2.0 if perimeter else None
+
         return PricedTaskRecord(
             room_name=room_name,
             task_type=task.task_type,
@@ -882,6 +1031,15 @@ def price_records_from_job(
             wall_area=wall_area,
             paintable_sqft=paintable_sqft,
             perimeter=perimeter,
+            price_symbolic=getattr(task, "price_symbolic", None),
+            price_numeric=getattr(task, "price_numeric", None),
+            payout_symbolic=getattr(task, "payout_price_symbolic", getattr(task, "payout_symbolic", None)),
+            payout_numeric=getattr(task, "payout_price_numeric", getattr(task, "payout_numeric", None)),
+            material_symbolic=getattr(task, "material_price_symbolic", getattr(task, "material_symbolic", None)),
+            material_numeric=getattr(task, "material_price_numeric", getattr(task, "material_numeric", None)),
+            gallons_ceiling=gallons_ceiling,
+            gallons_wall=gallons_wall,
+            gallons_trim=gallons_trim,
         )
 
     records: list[PricedTaskRecord] = []
