@@ -8,8 +8,6 @@ from contextlib import contextmanager
 
 from models import QuoteJob, Space, Room, Task
 from config import (DEFAULT_SENDER_EMAIL, EXCEL_FOLDER_ID, EXCEL_DELEGATE_EMAIL,
-                    PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, HOMESTRETCH_COOKIE)
-from services import aws_service, monday_service, rendr_service, gemini_service, excel_email_service
                     PRICING_CONFIG, MATERIAL_PRICING_CONFIG, PAYOUT_PRICING_CONFIG, PROMPT, EXCEL_CONFIG_FOLDER_ID,
                     HOMESTRETCH_COOKIE)
 from services import aws_service, monday_service, rendr_service, gemini_service, excel_finance_sheet_service
@@ -74,12 +72,6 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
 
     config = _fetch_config(board_id)
     monday_api_key = config["monday_api_key"]
-    excel_key = config["excel_key"]
-    rendr_token = config["rendr_token"]
-    vertex_key = config["vertex_key"]
-    prompt_text_base = config["prompt_text_base"]
-    if not rendr_token:
-        return 500, {"message": "Rendr Access Token collection failed"}
     workspace_id = monday_service.get_workspace_id_from_board(board_id, monday_api_key)
 
     with bind_job_context(job, board_id, workspace_id):
@@ -90,8 +82,6 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
         if not rendr_token:
             raise ValueError(f"Rendr Access Token collection failed")
 
-    if not populate_spaces(job, rendr_token):
-        return 200, {"message": "No matching Rendr project found", "pulseId": job.monday_item_id}
         if not populate_spaces(job, rendr_token):
             raise RuntimeError(f"No matching Rendr project found for address {job.address}")
 
@@ -153,9 +143,9 @@ def run_quote_pipeline(event_data: Dict[str, Any]):
     payload = build_payload(job)
     logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
         payload = build_payload(job)
+        payload = build_payload(job)
+        logger.info(f"--- PAYLOAD TO HOMESTRETCH ---: {json.dumps(payload, indent=2)}")
 
-    rendr_service.send_submission(payload, HOMESTRETCH_COOKIE)
-    return 200, {"challenge": ""}
         rendr_service.send_submission(payload, HOMESTRETCH_COOKIE)
         return 200, {"challenge": ""}
 
